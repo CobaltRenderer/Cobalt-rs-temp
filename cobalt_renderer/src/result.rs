@@ -1,4 +1,4 @@
-// Copyright (c) 2026, Maptek Pty Ltd 
+// Copyright (c) 2026, Maptek Pty Ltd
 // Licensed under the MIT License
 use cobalt_renderer_sys as sys;
 
@@ -11,7 +11,7 @@ pub type RendererResult<T> = std::result::Result<T, RendererError>;
 ///
 /// In most instances the error type will be `Failure` as the
 /// C++ renderer does not return error types itself, instead most error
-/// causes are reported in the log (see main documentation for more)
+/// causes are reported in the log (see documentation for more)
 #[derive(FromPrimitive, Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(i32)]
 pub enum RendererError {
@@ -40,7 +40,7 @@ macro_rules! return_on_failure {
 
 impl From<std::io::Error> for RendererError {
     fn from(_value: std::io::Error) -> Self {
-        // TODO: More comprehensive handling here
+        // TODO(DTM): More comprehensive handling here
         Self::IoError
     }
 }

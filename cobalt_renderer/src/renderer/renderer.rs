@@ -1,12 +1,12 @@
-// Copyright (c) 2026, Maptek Pty Ltd 
+// Copyright (c) 2026, Maptek Pty Ltd
 // Licensed under the MIT License
 use bitflags::bitflags;
 use num_enum::TryFromPrimitive;
 use parking_lot::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 use std::sync::Arc;
 
-use crate::RendererInfo;
 use crate::RendererPlugin;
+use crate::RendererPluginInternal;
 use crate::render_tree::*;
 use crate::resources::*;
 
@@ -75,11 +75,11 @@ pub struct Renderer {
 /// It's expected that this type is wrapped in an `std::sync::Arc`
 pub(crate) struct RendererInternal {
     pub(crate) handle: sys::Cobalt_Renderer,
-    plugin: Arc<RendererPlugin>,
+    plugin: Arc<RendererPluginInternal>,
 }
 
 impl Renderer {
-    pub(crate) fn new(handle: sys::Cobalt_Renderer, plugin: Arc<RendererPlugin>) -> Self {
+    pub(crate) fn new(handle: sys::Cobalt_Renderer, plugin: Arc<RendererPluginInternal>) -> Self {
         let lock = GraphicsLock(Arc::new(RwLock::new(())));
         Renderer {
             internal: Arc::new(RendererInternal { handle, plugin }),
@@ -445,11 +445,21 @@ impl Renderer {
         self.graphics_lock.clone()
     }
 
-    /// Start rendering a new frame with the current render passes and their children
+    /// Start rendering a new frame with the current render passes and their children.
     ///
     /// If a frame is currently rendering, this call will block until it's done.
-    /// An associated [`GraphicsLock`] must be used before starting a frame
-    pub fn start_new_frame(&self) {
+    ///
+    /// # Safety
+    ///
+    /// This library does not protect against all misuse of the renderer. Before
+    /// starting a frame, YOU must ensure the following conditions are met.
+    /// - All bound resources are alive. Any dropped objects that are still
+    ///   bound to another object could cause a crash. For example, a dropped
+    ///   ShaderProgram still in use by a ProgramNode.
+    /// - No other renderer functions are running while this function is running.
+    ///   A [`GraphicsLock`] obtained from [`Renderer::graphics_lock`] can be used to
+    ///   handle this synchronization, or you can use your own mechanism.
+    pub unsafe fn start_new_frame(&self) {
         // Acquiring the graphics lock exclusively to ensure no other graphics work is ongoing
         let _lock = self.graphics_lock.frame_lock();
         unsafe {

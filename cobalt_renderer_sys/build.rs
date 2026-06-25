@@ -1,4 +1,4 @@
-// Copyright (c) 2026, Maptek Pty Ltd 
+// Copyright (c) 2026, Maptek Pty Ltd
 // Licensed under the MIT License
 
 use std::env;
@@ -48,14 +48,25 @@ Cobalt Renderer SDK could not be found. Either
     let sdk_version_file_path = sdk_path.join("version.yml");
     // NOTE(DTM): This is extremely rudimentary version checking but avoids bringing
     // in a dependency to parse YML files and semvar strings
-    let sdk_version_yml = std::fs::read_to_string(sdk_version_file_path).expect("Could not read SDK version.yml file");
-    let sdk_version_yml_parts:Vec<&str> = sdk_version_yml.split(':').collect();
+    let sdk_version_yml = std::fs::read_to_string(sdk_version_file_path)
+        .expect("Could not read SDK version.yml file");
+    let sdk_version_yml_parts: Vec<&str> = sdk_version_yml.split(':').collect();
     assert_eq!(sdk_version_yml_parts.len(), 2, "Invalid version.yml file");
-    assert_eq!(sdk_version_yml_parts[0].trim(), "version", "version.yml must contain 'version' field");
+    assert_eq!(
+        sdk_version_yml_parts[0].trim(),
+        "version",
+        "version.yml must contain 'version' field"
+    );
     let sdk_version = sdk_version_yml_parts[1];
     let sdk_semvar = parse_semvar(sdk_version).expect("SDK version is not valid semvar");
 
-    assert!(crate_semvar.0 == sdk_semvar.0 && crate_semvar.1 == sdk_semvar.1, "Unsupported Cobalt SDK version. This crate requires version {}.{} while provided SDK is version {}. Major and minor version numbers must match. Please use an SDK with the correct version or use a different version of this crate", crate_semvar.0, crate_semvar.1, sdk_version);
+    assert!(
+        crate_semvar.0 == sdk_semvar.0 && crate_semvar.1 == sdk_semvar.1,
+        "Unsupported Cobalt SDK version. This crate requires version {}.{} while provided SDK is version {}. Major and minor version numbers must match. Please use an SDK with the correct version or use a different version of this crate",
+        crate_semvar.0,
+        crate_semvar.1,
+        sdk_version
+    );
 
     // Determine paths in SDK
     #[allow(unused_assignments)]
@@ -124,13 +135,13 @@ Cobalt Renderer SDK could not be found. Either
 // Very rudimentary semvar parsing, always assumes just 3 numbers
 // No additional semvar details are supported
 fn parse_semvar(semvar: &str) -> Option<(u32, u32, u32)> {
-    let parts:Vec<&str> = semvar.trim().split(".").collect();
+    let parts: Vec<&str> = semvar.trim().split(".").collect();
     if parts.len() != 3 {
         return None;
     }
-    let major:u32 = parts[0].parse().ok()?;
-    let minor:u32 = parts[1].parse().ok()?;
-    let patch:u32 = parts[2].parse().ok()?;
+    let major: u32 = parts[0].parse().ok()?;
+    let minor: u32 = parts[1].parse().ok()?;
+    let patch: u32 = parts[2].parse().ok()?;
     Some((major, minor, patch))
 }
 
@@ -177,9 +188,10 @@ fn find_sdk_download() -> Option<SdkDownload> {
         arch = Some("arm64");
     }
 
-    let downloads:std::collections::HashMap<&str, SdkDownload> = [
+    let downloads: std::collections::HashMap<&str, SdkDownload> = [
         // TODO(DTM): Fill out with official release
-    ].into();
+    ]
+    .into();
 
     let platform = platform?;
     let toolchain = toolchain?;

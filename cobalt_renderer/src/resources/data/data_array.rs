@@ -1,7 +1,7 @@
-// Copyright (c) 2026, Maptek Pty Ltd 
+// Copyright (c) 2026, Maptek Pty Ltd
 // Licensed under the MIT License
-use std::sync::Arc;
 use bitflags::bitflags;
+use std::sync::Arc;
 
 use super::DataArrayOutput;
 use crate::renderer::RendererInternal;

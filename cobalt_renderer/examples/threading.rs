@@ -1,4 +1,4 @@
-// Copyright (c) 2026, Maptek Pty Ltd 
+// Copyright (c) 2026, Maptek Pty Ltd
 // Licensed under the MIT License
 
 use std::f32::consts::PI;
@@ -10,10 +10,10 @@ use std::time::{Duration, Instant};
 use winit::dpi::PhysicalSize;
 use winit::event::{Event, WindowEvent};
 use winit::event_loop::EventLoopBuilder;
-#[cfg(target_os = "linux")]
-use winit::platform::x11::EventLoopBuilderExtX11;
 #[cfg(target_os = "windows")]
 use winit::platform::windows::EventLoopBuilderExtWindows;
+#[cfg(target_os = "linux")]
+use winit::platform::x11::EventLoopBuilderExtX11;
 use winit::raw_window_handle::{HasDisplayHandle, HasWindowHandle};
 use winit::window::WindowBuilder;
 
@@ -33,7 +33,9 @@ struct Context {
 fn main() {
     // Cobalt renderer outputs lots of diagnostic information into logs
     // so we setup a log to listen for it (see 'log' crate)
-    let logger = env_logger::builder().filter_level(log::LevelFilter::Info).build();
+    let logger = env_logger::builder()
+        .filter_level(log::LevelFilter::Info)
+        .build();
     log::set_logger(Box::leak(Box::new(logger))).unwrap();
     log::set_max_level(log::LevelFilter::Info);
 
@@ -53,7 +55,9 @@ fn main() {
     path = path.join("Bin/x64");
     let library = cobalt_renderer::init().unwrap();
     let mut renderer_enumerator = library.renderer_plugin_enumerator();
-    renderer_enumerator.enumerate_plugins_in_directory(path).unwrap();
+    renderer_enumerator
+        .enumerate_plugins_in_directory(path)
+        .unwrap();
     let mut info = renderer_enumerator.preferred_plugin().unwrap();
     log::info!("Picked {:?}", info.api_family());
 
@@ -130,7 +134,9 @@ fn main() {
                                 next_update = Instant::now() + Duration::from_millis(16);
 
                                 window.pre_present_notify();
-                                main_context.renderer.lock().unwrap().start_new_frame();
+                                unsafe {
+                                    main_context.renderer.lock().unwrap().start_new_frame();
+                                }
                             }
                         }
                         WindowEvent::Resized(size) => {

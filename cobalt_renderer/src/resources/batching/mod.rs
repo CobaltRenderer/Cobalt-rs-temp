@@ -1,4 +1,4 @@
-// Copyright (c) 2026, Maptek Pty Ltd 
+// Copyright (c) 2026, Maptek Pty Ltd
 // Licensed under the MIT License
 
 //! Utilities for batching data transfers and controlling timing

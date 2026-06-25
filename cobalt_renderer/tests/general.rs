@@ -1,4 +1,4 @@
-// Copyright (c) 2026, Maptek Pty Ltd 
+// Copyright (c) 2026, Maptek Pty Ltd
 // Licensed under the MIT License
 
 use cobalt_renderer::render_tree::*;
@@ -190,7 +190,9 @@ fn output_capture() {
 
     // Main loop
 
-    context.renderer.start_new_frame();
+    unsafe {
+        context.renderer.start_new_frame();
+    }
 
     save_capture(&mut context, "general.png");
 }

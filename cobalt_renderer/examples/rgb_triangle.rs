@@ -1,4 +1,4 @@
-// Copyright (c) 2026, Maptek Pty Ltd 
+// Copyright (c) 2026, Maptek Pty Ltd
 // Licensed under the MIT License
 
 use cobalt_renderer::render_tree::*;
@@ -22,29 +22,12 @@ use winit::window::WindowBuilder;
 // Vertex shader simply passes the position and color on as
 // positions are already in correct screen coordinates
 // Fragment shader just outputs the color
-const VERTEX_SHADER: &str = "
+const SHADER: &str = "
 struct VSInput {
     float3 position : position;
     float3 color : color;
 };
 
-struct VSOutput {
-    float4 position : SV_POSITION;
-    float3 color : COLOR;
-};
-
-VSOutput main(VSInput IN)
-{
-    VSOutput OUT;
-
-    OUT.color = IN.color;
-    OUT.position = float4(IN.position, 1.0f);
-
-    return OUT;
-}
-";
-
-const FRAGMENT_SHADER: &str = "
 struct VSOutput {
     float4 position : SV_POSITION;
     float3 color : COLOR;
@@ -58,7 +41,15 @@ float3 linearToSrgb(float3 lin) {
     return srgb;
 }
 
-float4 main(VSOutput IN) : SV_TARGET0
+VSOutput vertex(VSInput IN)
+{
+    VSOutput OUT;
+    OUT.position = float4(IN.position, 1.0f);
+    OUT.color = IN.color;
+    return OUT;
+}
+
+float4 fragment(VSOutput IN) : SV_TARGET0
 {
     return float4(linearToSrgb(IN.color), 1.0f);
 }
@@ -69,9 +60,7 @@ const WINDOW_SIZE: [u32; 2] = [720, 480];
 fn main() {
     // Cobalt renderer outputs lots of diagnostic information into logs
     // so we setup a log to listen for it (see 'log' crate)
-    let logger = env_logger::builder().filter_level(log::LevelFilter::Info).build();
-    log::set_logger(Box::leak(Box::new(logger))).unwrap();
-    log::set_max_level(log::LevelFilter::Info);
+    env_logger::init();
 
     // Use 'winit' crate to create a window to display stuff in
     let event_loop = EventLoopBuilder::new()
@@ -92,7 +81,9 @@ fn main() {
     path = path.join("Bin/x64");
     let library = cobalt_renderer::init().unwrap();
     let mut renderer_enumerator = library.renderer_plugin_enumerator();
-    renderer_enumerator.enumerate_plugins_in_directory(path).unwrap();
+    renderer_enumerator
+        .enumerate_plugins_in_directory(path)
+        .unwrap();
     let mut info = renderer_enumerator.preferred_plugin().unwrap();
 
     // We create a device enumerator to see what devices exist
@@ -153,8 +144,8 @@ fn main() {
         .load_shader_stage(
             programs::ShaderStage::Vertex,
             programs::ShaderSourceInfo::Hlsl {
-                code: VERTEX_SHADER,
-                entry_point_function_name: None,
+                code: SHADER,
+                entry_point_function_name: Some("vertex"),
             },
         )
         .unwrap();
@@ -162,8 +153,8 @@ fn main() {
         .load_shader_stage(
             programs::ShaderStage::Fragment,
             programs::ShaderSourceInfo::Hlsl {
-                code: FRAGMENT_SHADER,
-                entry_point_function_name: None,
+                code: SHADER,
+                entry_point_function_name: Some("fragment"),
             },
         )
         .unwrap();
@@ -260,7 +251,9 @@ fn main() {
                         WindowEvent::RedrawRequested => {
                             // Start new frame
                             window.pre_present_notify();
-                            renderer.start_new_frame();
+                            unsafe {
+                                renderer.start_new_frame();
+                            }
                         }
                         WindowEvent::Resized(size) => {
                             frame_buffer

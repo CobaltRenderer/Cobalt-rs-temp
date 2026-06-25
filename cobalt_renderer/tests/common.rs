@@ -1,4 +1,4 @@
-// Copyright (c) 2026, Maptek Pty Ltd 
+// Copyright (c) 2026, Maptek Pty Ltd
 // Licensed under the MIT License
 
 #![allow(dead_code)]
@@ -29,7 +29,7 @@ pub fn setup() -> cobalt_renderer::Library {
     cobalt_renderer::init().unwrap()
 }
 
-pub fn setup_plugin() -> (cobalt_renderer::Library, cobalt_renderer::RendererInfo) {
+pub fn setup_plugin() -> (cobalt_renderer::Library, cobalt_renderer::RendererPlugin) {
     let mut library = setup();
 
     let mut enumerator = library.renderer_plugin_enumerator();
@@ -46,7 +46,7 @@ pub struct CaptureContext {
     pub frame_buffer: frame_buffers::FrameBuffer,
     pub texture: textures::TextureBuffer2D,
     pub output_capture: frame_buffers::FrameBufferOutput,
-    pub renderer_info: cobalt_renderer::RendererInfo,
+    pub renderer_info: cobalt_renderer::RendererPlugin,
     pub library: cobalt_renderer::Library,
 }
 

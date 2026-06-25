@@ -1,12 +1,12 @@
-// Copyright (c) 2026, Maptek Pty Ltd 
+// Copyright (c) 2026, Maptek Pty Ltd
 // Licensed under the MIT License
 use std::sync::Arc;
 
 use bitflags::bitflags;
 
-use crate::{RendererInfo, RendererPlugin};
 use crate::renderer::{DeviceType, Feature, GraphicsDevice};
 use crate::{RendererError, RendererResult};
+use crate::{RendererPlugin, RendererPluginInternal};
 
 use cobalt_renderer_sys as sys;
 
@@ -29,14 +29,14 @@ bitflags! {
 /// and used to create a [Renderer](crate::renderer::Renderer) object
 pub struct GraphicsDeviceEnumerator {
     handle: sys::Cobalt_GraphicsDeviceEnumerator,
-    pub(crate) plugin: Arc<RendererPlugin>,
+    pub(crate) plugin: Arc<RendererPluginInternal>,
 }
 
 impl GraphicsDeviceEnumerator {
-    pub(crate) fn new(
+    pub(crate) fn new_and_enumerate_devices(
         handle: sys::Cobalt_GraphicsDeviceEnumerator,
         flags: sys::Cobalt_DeviceEnumerationFlags,
-        plugin: Arc<RendererPlugin>,
+        plugin: Arc<RendererPluginInternal>,
     ) -> RendererResult<Self> {
         unsafe {
             return_on_failure!(sys::Cobalt_GraphicsDeviceEnumerator_EnumerateDevices(

@@ -1,5 +1,7 @@
-// Copyright (c) 2026, Maptek Pty Ltd 
+// Copyright (c) 2026, Maptek Pty Ltd
 // Licensed under the MIT License
+
+// TODO(DTM): Update
 
 //! Cross-platform graphics rendering library
 //!
@@ -62,10 +64,10 @@ mod result;
 pub use result::*;
 
 mod library;
-mod renderer_info;
+mod renderer_plugin;
 mod renderer_plugin_enumerator;
 pub use library::*;
-pub use renderer_info::*;
+pub use renderer_plugin::*;
 pub use renderer_plugin_enumerator::*;
 
 pub mod render_tree;
