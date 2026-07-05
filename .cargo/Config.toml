@@ -1,3 +1,0 @@
-[env]
-COBALT_SDK_PATH = { value = "CobaltSDK", relative = true }
-

@@ -170,7 +170,7 @@ impl FrameBuffer {
         }
     }
 
-    pub fn bind_window(
+    pub unsafe fn bind_window(
         &mut self,
         window: Window,
         window_size: &[u32; 2],

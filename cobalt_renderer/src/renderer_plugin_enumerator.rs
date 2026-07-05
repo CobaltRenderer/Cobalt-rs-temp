@@ -54,8 +54,10 @@ const PLUGIN_PREFERENCE: [(ApiFamily, u32); 3] = [
 const PLUGIN_PREFERENCE: [(ApiFamily, u32); 2] =
     [(ApiFamily::Vulkan, u32::MAX), (ApiFamily::OpenGl, u32::MAX)];
 
+pub const DEVELOPMENT_RUNTIME_BIN_DIR: &str = sys::DEVELOPMENT_RUNTIME_BIN_DIR;
+
 /// Discover renderer plugins and evaluate the preferred plugin for the current platform
-/// 
+///
 /// This enumerator keeps an internal list of plugins. You may inspect all loaded plugins
 /// or select the preferred plugin.
 pub struct RendererPluginEnumerator {
@@ -71,9 +73,9 @@ impl RendererPluginEnumerator {
         }
     }
 
-    /// Discover and load all plugins in the provided directory 
+    /// Discover and load all plugins in the provided directory
     ///
-    /// This function will load all shared library files in the provided directory and 
+    /// This function will load all shared library files in the provided directory and
     /// retrieve any renderer plugins in them. This includes if a library contains multiple plugins.
     /// All found plugins are added to an internally stored list.
     pub fn enumerate_plugins_in_directory(&mut self, path: impl AsRef<Path>) -> RendererResult<()> {
@@ -134,7 +136,7 @@ impl RendererPluginEnumerator {
         loop {
             let mut handle = std::ptr::null_mut();
             let result = unsafe {
-                sys::Cobalt_GetRendererInfo(
+                sys::Cobalt_GetRendererPlugin(
                     self.library.handle,
                     lib_handle as *mut std::ffi::c_void,
                     index,
@@ -192,7 +194,7 @@ impl RendererPluginEnumerator {
         None
     }
 
-    /// Determine preferred plugin from currently discovered plugins and 
+    /// Determine preferred plugin from currently discovered plugins and
     /// get reference to it
     pub fn preferred_plugin_ref(&self) -> Option<&RendererPlugin> {
         if let Some(i) = self.find_preferred_plugin() {
@@ -203,7 +205,7 @@ impl RendererPluginEnumerator {
         self.plugins.first()
     }
 
-    /// Determine preferred plugin from currently discovered plugins and 
+    /// Determine preferred plugin from currently discovered plugins and
     /// take ownership of it, freeing all other plugins
     pub fn preferred_plugin(mut self) -> Option<RendererPlugin> {
         if let Some(i) = self.find_preferred_plugin() {

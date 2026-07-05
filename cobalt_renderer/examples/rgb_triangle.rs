@@ -11,10 +11,10 @@ use raw_window_handle::HasDisplayHandle;
 use winit::dpi::PhysicalSize;
 use winit::event::{Event, WindowEvent};
 use winit::event_loop::EventLoopBuilder;
+#[cfg(target_os = "linux")]
+use winit::platform::wayland::EventLoopBuilderExtWayland;
 #[cfg(target_os = "windows")]
 use winit::platform::windows::EventLoopBuilderExtWindows;
-#[cfg(target_os = "linux")]
-use winit::platform::x11::EventLoopBuilderExtX11;
 use winit::raw_window_handle::HasWindowHandle;
 use winit::window::WindowBuilder;
 
@@ -35,9 +35,9 @@ struct VSOutput {
 
 float3 linearToSrgb(float3 lin) {
     float3 srgb;
-    srgb.x = (lin.x <= 0.0031308) ? srgb.x = lin.x * 12.92 : 1.055 * pow(lin.x, 1.0 / 2.4) - 0.055;    
-    srgb.y = (lin.y <= 0.0031308) ? srgb.y = lin.y * 12.92 : 1.055 * pow(lin.y, 1.0 / 2.4) - 0.055;    
-    srgb.z = (lin.z <= 0.0031308) ? srgb.z = lin.z * 12.92 : 1.055 * pow(lin.z, 1.0 / 2.4) - 0.055;    
+    srgb.x = (lin.x <= 0.0031308) ? srgb.x = lin.x * 12.92 : 1.055 * pow(lin.x, 1.0 / 2.4) - 0.055;
+    srgb.y = (lin.y <= 0.0031308) ? srgb.y = lin.y * 12.92 : 1.055 * pow(lin.y, 1.0 / 2.4) - 0.055;
+    srgb.z = (lin.z <= 0.0031308) ? srgb.z = lin.z * 12.92 : 1.055 * pow(lin.z, 1.0 / 2.4) - 0.055;
     return srgb;
 }
 
@@ -77,8 +77,7 @@ fn main() {
     // First we need to load the renderer plugin
     // We could dynamically search for a plugin or do anything here
     // But we know it should be adjacent to our program
-    let mut path = std::path::PathBuf::from(std::env::var("COBALT_SDK_PATH").unwrap());
-    path = path.join("Bin/x64");
+    let path = std::path::PathBuf::from(cobalt_renderer::DEVELOPMENT_RUNTIME_BIN_DIR);
     let library = cobalt_renderer::init().unwrap();
     let mut renderer_enumerator = library.renderer_plugin_enumerator();
     renderer_enumerator
@@ -116,15 +115,17 @@ fn main() {
     // Create framebuffer which is bound to the window
     let mut frame_buffer = renderer.create_frame_buffer();
     frame_buffer.define_viewport_region(&[0, 0], &WINDOW_SIZE);
-    frame_buffer
-        .bind_window(
-            renderer_window,
-            &WINDOW_SIZE,
-            frame_buffers::WindowDepthStencilMode::DepthFloat32,
-            frame_buffers::WindowColorSpaceMode::Default,
-            frame_buffers::WindowBindingFlags::None,
-        )
-        .unwrap();
+    unsafe {
+        frame_buffer
+            .bind_window(
+                renderer_window,
+                &WINDOW_SIZE,
+                frame_buffers::WindowDepthStencilMode::DepthFloat32,
+                frame_buffers::WindowColorSpaceMode::Default,
+                frame_buffers::WindowBindingFlags::None,
+            )
+            .unwrap();
+    }
 
     // Create render pass with grey clear color
     let color: cgmath::Vector4<f32> = cgmath::Vector4::new(0.2, 0.2, 0.2, 0.2);
@@ -243,7 +244,7 @@ fn main() {
 
     // Main loop
     event_loop
-        .run(move |event, elwt| {
+        .run(|event, elwt| {
             match event {
                 Event::WindowEvent { event, window_id } if window_id == window.id() => {
                     match event {
@@ -273,6 +274,10 @@ fn main() {
             }
         })
         .unwrap();
+
+    // Delete framebuffer before we delete the window and renderer
+    drop(frame_buffer);
+    renderer.wait_for_deferred_deletion_complete();
 
     // Everything cleans itself up at the end when dropped
 }

@@ -10,10 +10,10 @@ use std::time::{Duration, Instant};
 use winit::dpi::PhysicalSize;
 use winit::event::{Event, WindowEvent};
 use winit::event_loop::EventLoopBuilder;
+#[cfg(target_os = "linux")]
+use winit::platform::wayland::EventLoopBuilderExtWayland;
 #[cfg(target_os = "windows")]
 use winit::platform::windows::EventLoopBuilderExtWindows;
-#[cfg(target_os = "linux")]
-use winit::platform::x11::EventLoopBuilderExtX11;
 use winit::raw_window_handle::{HasDisplayHandle, HasWindowHandle};
 use winit::window::WindowBuilder;
 
@@ -51,8 +51,7 @@ fn main() {
         .build(&event_loop)
         .unwrap();
 
-    let mut path = std::path::PathBuf::from(std::env::var("COBALT_SDK_PATH").unwrap());
-    path = path.join("Bin/x64");
+    let mut path = std::path::PathBuf::from(cobalt_renderer::DEVELOPMENT_RUNTIME_BIN_DIR);
     let library = cobalt_renderer::init().unwrap();
     let mut renderer_enumerator = library.renderer_plugin_enumerator();
     renderer_enumerator
@@ -84,15 +83,17 @@ fn main() {
     // Create framebuffer and render pass
     let mut frame_buffer = renderer.create_frame_buffer();
     frame_buffer.define_viewport_region(&[0, 0], &WINDOW_SIZE);
-    frame_buffer
-        .bind_window(
-            renderer_window,
-            &WINDOW_SIZE,
-            frame_buffers::WindowDepthStencilMode::None,
-            frame_buffers::WindowColorSpaceMode::Default,
-            frame_buffers::WindowBindingFlags::None,
-        )
-        .unwrap();
+    unsafe {
+        frame_buffer
+            .bind_window(
+                renderer_window,
+                &WINDOW_SIZE,
+                frame_buffers::WindowDepthStencilMode::None,
+                frame_buffers::WindowColorSpaceMode::Default,
+                frame_buffers::WindowBindingFlags::None,
+            )
+            .unwrap();
+    }
 
     let mut render_pass_node = renderer.create_render_pass_node();
     render_pass_node.bind_frame_buffer(&frame_buffer);
@@ -123,7 +124,7 @@ fn main() {
     let start_time = Instant::now();
     let mut next_update = start_time + Duration::from_millis(16);
     event_loop
-        .run(move |event, elwt| {
+        .run(|event, elwt| {
             match event {
                 Event::WindowEvent { event, window_id } if window_id == window.id() => {
                     match event {
@@ -159,6 +160,9 @@ fn main() {
 
     context.shutdown_signal.store(true, Ordering::SeqCst);
     thread.join().unwrap();
+
+    drop(frame_buffer);
+    context.renderer.lock().unwrap().wait_for_deferred_deletion_complete();
 }
 
 fn update_thread(context: Arc<Context>) {

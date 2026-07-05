@@ -19,7 +19,7 @@ pub enum ApiFamily {
     Vulkan = sys::Cobalt_ApiFamily_Vulkan as i32,
     Metal = sys::Cobalt_ApiFamily_Metal as i32,
     #[num_enum(default)]
-    Unknown
+    Unknown,
 }
 
 impl std::fmt::Display for ApiFamily {
@@ -69,7 +69,7 @@ impl PartialOrd for ApiVersion {
 /// for creating a [`GraphicsDeviceEnumerator`]
 pub struct RendererPlugin {
     pub(crate) internal: Arc<RendererPluginInternal>,
-    pub(crate) handle: sys::Cobalt_RendererInfo,
+    pub(crate) handle: sys::Cobalt_RendererPlugin,
 }
 
 /// Actual plugin handle, shared between many objects via `Arc<T>`
@@ -93,31 +93,37 @@ impl RendererPlugin {
     ) -> Self {
         RendererPlugin {
             handle,
-            internal: Arc::new(RendererPluginInternal { _module: module, _library: library }),
+            internal: Arc::new(RendererPluginInternal {
+                _module: module,
+                _library: library,
+            }),
         }
     }
 
     #[cfg(target_family = "unix")]
     pub(crate) fn new(
         module: Arc<libloading::os::unix::Library>,
-        handle: sys::Cobalt_RendererInfo,
+        handle: sys::Cobalt_RendererPlugin,
         library: Arc<LibraryInternal>,
     ) -> Self {
         RendererPlugin {
             handle,
-            plugin: Arc::new(RendererPluginInternal { module, library }),
+            internal: Arc::new(RendererPluginInternal {
+                _module: module,
+                _library: library,
+            }),
         }
     }
 
     pub fn api_family(&self) -> ApiFamily {
-        let value = unsafe { sys::Cobalt_RendererInfo_GetApiFamily(self.handle) };
+        let value = unsafe { sys::Cobalt_RendererPlugin_GetApiFamily(self.handle) };
         ApiFamily::from_primitive(value as i32)
     }
 
     pub fn target_api_version(&self) -> ApiVersion {
         let mut version = sys::Cobalt_Version::default();
         unsafe {
-            sys::Cobalt_RendererInfo_GetTargetApiVersion(self.handle, &mut version);
+            sys::Cobalt_RendererPlugin_GetTargetApiVersion(self.handle, &mut version);
         }
         ApiVersion {
             major: version.major,
@@ -136,7 +142,7 @@ impl RendererPlugin {
             let mut length = name.len();
             unsafe {
                 // c_char will be either i8 or u8, so safe to treat u8 as c_char
-                sys::Cobalt_RendererInfo_GetName(
+                sys::Cobalt_RendererPlugin_GetName(
                     self.handle,
                     name.as_mut_ptr() as *mut std::ffi::c_char,
                     &mut length,
@@ -163,7 +169,7 @@ impl RendererPlugin {
             let mut length = name.len();
             unsafe {
                 // c_char will be either i8 or u8, so safe to treat u8 as c_char
-                sys::Cobalt_RendererInfo_GetDisplayName(
+                sys::Cobalt_RendererPlugin_GetDisplayName(
                     self.handle,
                     name.as_mut_ptr() as *mut std::ffi::c_char,
                     &mut length,
@@ -187,7 +193,7 @@ impl RendererPlugin {
     ) -> RendererResult<GraphicsDeviceEnumerator> {
         let mut enumerator = std::ptr::null_mut();
         unsafe {
-            sys::Cobalt_RendererInfo_CreateGraphicsDeviceEnumerator(self.handle, &mut enumerator);
+            sys::Cobalt_RendererPlugin_CreateGraphicsDeviceEnumerator(self.handle, &mut enumerator);
         }
         GraphicsDeviceEnumerator::new_and_enumerate_devices(
             enumerator,

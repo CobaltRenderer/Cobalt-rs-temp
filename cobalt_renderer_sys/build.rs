@@ -1,45 +1,56 @@
 // Copyright (c) 2026, Maptek Pty Ltd
 // Licensed under the MIT License
 
+#![allow(unused)]
+
 use std::env;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
-const SDK_PATH_VAR: &str = "COBALT_SDK_PATH";
+const SDK_PATH_VAR: &str = "COBALT_SDK_DIR";
 
-fn main() {
-    // Determine SDK path
-    let sdk_path: PathBuf = if let Some(p) = std::env::var_os(SDK_PATH_VAR) {
-        // Set by environment variable
-        p.into()
-    } else {
-        #[cfg(feature = "download_sdk")]
-        {
-            // Using SDK download feature
-            let sdk_download = find_sdk_download().unwrap();
-            let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
-            let sdk_dir = out_dir.join("sdk");
-            download_verify_unzip_sdk(sdk_download, &sdk_dir);
-            sdk_dir
-        }
-        #[cfg(not(feature = "download_sdk"))]
-        panic!("
-Cobalt Renderer SDK could not be found. Either
-1. Download the Cobalt Renderer SDK and set environment variable '{}' to the SDK directory.
-   This can be done by setting the environment variable in .cargo/Config.toml in your project directory.
-   See https://doc.rust-lang.org/cargo/reference/config.html#configuration-format for more details
-2. Enable feature 'download_sdk' on this crate. This will download the appropriate SDK and store it
-   in the target directory.
-            ", SDK_PATH_VAR);
-    };
-    println!("SDK path is '{}'", sdk_path.display());
+const SDK_INCLUDE_VAR: &str = "COBALT_INCLUDE_DIR";
+const SDK_LIB_VAR: &str = "COBALT_LIB_DIR";
+const SDK_BIN_VAR: &str = "COBALT_BIN_DIR";
 
-    // Verify path exists
-    if !sdk_path.exists() {
-        panic!(
-            "Cobalt Renderer SDK does not exist at expected path '{}'",
-            sdk_path.display(),
-        )
-    }
+const SDK_CACHE_VAR: &str = "COBALT_SDK_CACHE_DIR";
+
+#[cfg(feature = "download_sdk")]
+const SDK_DOWNLOADS: [(&str, SdkDownload); 4] = [
+    (
+        "macos-clang-arm64",
+        SdkDownload {
+            download_url: "https://github.com/CobaltRenderer/Cobalt/releases/download/v2.0.0/CoobaltRenderer-SDK-macos-clang-arm64-v2.0.0.zip",
+            hash: "f0db7acd3f7a1f27336861c4b223ad407a39b3040f75a87b14147274990f2b7f",
+        },
+    ),
+    (
+        "ubuntu-clang-arm64",
+        SdkDownload {
+            download_url: "https://github.com/CobaltRenderer/Cobalt/releases/download/v2.0.0/CobaltRenderer-SDK-ubuntu-clang-arm64-v2.0.0.zip",
+            hash: "fe9283ab7f76252a66d9d39eabcb090d8861a4fbde62efc59bb4d09829172c64",
+        },
+    ),
+    (
+        "ubuntu-clang-x64",
+        SdkDownload {
+            download_url: "https://github.com/CobaltRenderer/Cobalt/releases/download/v2.0.0/CobaltRenderer-SDK-ubuntu-clang-x64-v2.0.0.zip",
+            hash: "488dfc120f3ff28ac1ec3ffa46dd845e6c06c21a8a603dac70e7d43b3cc4c5c8",
+        },
+    ),
+    (
+        "windows-msvc-x64",
+        SdkDownload {
+            download_url: "https://github.com/CobaltRenderer/Cobalt/releases/download/v2.0.0/CobaltRenderer-SDK-windows-msvc-x64-v2.0.0.zip ",
+            hash: "2f9e0ce1bc8d52cfc2e3305024b701d78aba6fee39b37c90dc32851f7827041d",
+        },
+    ),
+];
+
+const SDK_GIT_REPO: &str = "https://github.com/CobaltRenderer/Cobalt.git";
+const SDK_GIT_TAG: &str = "v2.0.0";
+
+fn assert_sdk_version(sdk_path: impl AsRef<Path>) {
+    let sdk_path = sdk_path.as_ref();
 
     // Verify version is supported
     let crate_version = env!("CARGO_PKG_VERSION");
@@ -67,30 +78,209 @@ Cobalt Renderer SDK could not be found. Either
         crate_semvar.1,
         sdk_version
     );
+}
 
-    // Determine paths in SDK
-    #[allow(unused_assignments)]
-    let mut arch: Option<&str> = None;
-    #[cfg(target_arch = "x86_64")]
-    {
-        arch = Some("x64");
-    }
-    #[cfg(target_arch = "x86")]
-    {
-        arch = Some("x86");
-    }
-    #[cfg(target_arch = "aarch64")]
-    {
-        arch = Some("arm");
-    }
-    let arch = arch.expect("Unsupported architecture. Must be x86, x86_64 or aarch64");
-    let lib_path = sdk_path.join("Lib").join(arch);
-    let include_path = sdk_path.join("Include").join("Cobalt").join("CBindings");
+struct SdkPaths {
+    lib: PathBuf,
+    include: PathBuf,
+    bin: PathBuf,
+}
 
-    // Tell cargo to look for shared libraries in the specified directory
+impl SdkPaths {
+    fn from_sdk_dir(dir: impl AsRef<Path>) -> SdkPaths {
+        assert_sdk_version(&dir);
+
+        let dir = dir.as_ref();
+        // Determine paths in SDK
+        #[allow(unused_assignments)]
+        let mut arch: Option<&str> = None;
+        #[cfg(target_arch = "x86_64")]
+        {
+            arch = Some("x64");
+        }
+        #[cfg(target_arch = "x86")]
+        {
+            arch = Some("x86");
+        }
+        #[cfg(target_arch = "aarch64")]
+        {
+            arch = Some("arm");
+        }
+        let arch = arch.expect("Unsupported architecture. Must be x86, x86_64 or aarch64");
+        SdkPaths {
+            lib: dir.join("Lib").join(arch),
+            include: dir.join("Include"),
+            bin: dir.join("Bin").join(arch),
+        }
+    }
+}
+
+fn main() {
+    let out_path: PathBuf = std::env::var("OUT_DIR").unwrap().into();
+
+    // Determine SDK path
+    let mut sdk_paths: Option<SdkPaths> = None;
+
+    // SDK paths set by single SDK variable
+    sdk_paths = sdk_paths.or_else(|| std::env::var_os(SDK_PATH_VAR).map(SdkPaths::from_sdk_dir));
+    // SDK paths set by individual variables
+    sdk_paths = sdk_paths.or_else(|| {
+        let lib = std::env::var_os(SDK_LIB_VAR);
+        let include = std::env::var_os(SDK_INCLUDE_VAR);
+        let bin = std::env::var_os(SDK_BIN_VAR);
+        if let Some(lib) = lib
+            && let Some(include) = include
+            && let Some(bin) = bin
+        {
+            Some(SdkPaths {
+                lib: lib.into(),
+                include: include.into(),
+                bin: bin.into(),
+            })
+        } else {
+            None
+        }
+    });
+    // Using SDK build feature
+    #[cfg(feature = "build_sdk")]
+    {
+        sdk_paths = sdk_paths.or_else(|| {
+            // Check if SDK has already been downloaded
+
+            use std::os::unix::process::CommandExt;
+            let cache_path: PathBuf = match std::env::var_os(SDK_CACHE_VAR) {
+                Some(p) => p.into(),
+                None => out_path.join("CobaltSDK"),
+            };
+            if cache_path.exists() {
+                return Some(SdkPaths::from_sdk_dir(cache_path));
+            }
+
+            let build_dir = out_path.join("CobaltBuild");
+            if !build_dir.exists() {
+                let repo = git2::Repository::clone(SDK_GIT_REPO, &build_dir)
+                    .expect("Could not clone git repo for build");
+                let tag_ref = repo
+                    .find_reference(&format!("refs/tags/{SDK_GIT_TAG}"))
+                    .unwrap();
+                let obj = tag_ref.peel(git2::ObjectType::Commit).unwrap();
+                repo.checkout_tree(&obj, None).unwrap();
+            }
+
+            let mut config_proc = std::process::Command::new("cmake")
+                .current_dir(&build_dir)
+                .arg("--preset")
+                .arg("linux-clang-x64-debug")
+                .arg("-DCOBALT_USE_SDL3=OFF")
+                .arg("-DCOBALT_BUILD_TESTS=OFF")
+                .arg("-DCOBALT_BUILD_EXAMPLES=OFF")
+                .arg("-DCOBALT_CLANG_FORMAT_ON_ALL=OFF")
+                .arg("-DCOBALT_CLANG_TIDY_ON_ALL=OFF")
+                .arg("-DCOBALT_RUN_MSVC_STATIC_ANALYSIS=OFF")
+                .spawn()
+                .expect("Could not run cmake, please ensure cmake is available on your PATH");
+            let config_result = config_proc.wait().expect("CMake didn't run");
+            if !config_result.success() {
+                panic!(
+                    "Failed to configure Cobalt Renderer CMake project. Please see above for errors"
+                );
+            }
+
+            let mut build_proc = std::process::Command::new("cmake")
+                .current_dir(&build_dir)
+                .arg("--build")
+                .arg("--preset")
+                .arg("linux-clang-x64-debug")
+                .arg("--target")
+                .arg("install")
+                .spawn()
+                .expect("Could not run cmake, please ensure cmake is available on your PATH");
+            let build_result = build_proc.wait().expect("CMake didn't run");
+            if !build_result.success() {
+                panic!(
+                    "Failed to build Cobalt Renderer CMake project. Please see above for errors"
+                );
+            }
+
+            // Move SDK build to cache
+            let build_out_path = build_dir.join("Output").join("SDK_Debug");
+            assert_sdk_version(&build_out_path);
+            if let Err(e) = std::fs::remove_dir_all(&cache_path) {
+                if e.kind() != std::io::ErrorKind::NotFound {
+                    panic!(
+                        "Could not remove cache directory '{}', {}",
+                        cache_path.display(),
+                        e
+                    )
+                }
+            }
+            std::fs::rename(build_out_path, &cache_path)
+                .expect("Could not move SDK build to cache location");
+
+            Some(SdkPaths::from_sdk_dir(cache_path))
+        });
+    }
+    // Using SDK download feature
+    #[cfg(feature = "download_sdk")]
+    {
+        sdk_paths = sdk_paths.or_else(|| {
+            // Check if SDK has already been downloaded
+            let cache_path: PathBuf = match std::env::var_os(SDK_CACHE_VAR) {
+                Some(p) => p.into(),
+                None => out_path.join("CobaltSDK"),
+            };
+            if cache_path.exists() {
+                return Some(SdkPaths::from_sdk_dir(cache_path));
+            }
+
+            // No SDK found, needs to be downloaded
+            let sdk_download = find_sdk_download().unwrap(); // TODO(DTM): Better error message
+            download_verify_unzip_sdk(sdk_download, &cache_path);
+            Some(SdkPaths::from_sdk_dir(cache_path))
+        });
+    }
+
+    let sdk_paths = match sdk_paths {
+        None => {
+            panic!("
+Cobalt Renderer SDK could not be found. Either
+1. Download the Cobalt Renderer SDK and set environment variable '{}' to the SDK directory.
+   This can be done by setting the environment variable in .cargo/Config.toml in your project directory.
+   See https://doc.rust-lang.org/cargo/reference/config.html#configuration-format for more details
+2. Enable feature 'download_sdk' on this crate. This will download the appropriate SDK and store it
+   in the target directory.", SDK_PATH_VAR);
+        }
+        Some(s) => s,
+    };
+
+    println!("SDK include path is '{}'", sdk_paths.include.display());
+    println!("SDK lib path is '{}'", sdk_paths.lib.display());
+    println!("SDK bin path is '{}'", sdk_paths.bin.display());
+
+    // Verify paths exists
+    if !sdk_paths.include.exists() {
+        panic!(
+            "Cobalt Renderer include path does not exist at expected path '{}'",
+            sdk_paths.include.display(),
+        )
+    }
+    if !sdk_paths.lib.exists() {
+        panic!(
+            "Cobalt Renderer lib path does not exist at expected path '{}'",
+            sdk_paths.lib.display(),
+        )
+    }
+    if !sdk_paths.bin.exists() {
+        panic!(
+            "Cobalt Renderer bin path does not exist at expected path '{}'",
+            sdk_paths.bin.display(),
+        )
+    }
+
+    // Tell cargo to look for static libraries in the specified directory
     println!(
         "cargo:rustc-link-search={}",
-        lib_path.to_str().expect("SDK path is not valid UTF-8")
+        sdk_paths.lib.to_str().expect("SDK path is not valid UTF-8")
     );
 
     // Tell rustc to link to the CBindings library
@@ -105,13 +295,13 @@ Cobalt Renderer SDK could not be found. Either
 
     // Import the following headers for the bindings
     let wrapper_contents = r#"
-        #include <CBindings.pkg>
-        #include <PlatformBindings.pkg>
+        #include <Cobalt/CBindings/CBindings.pkg>
+        #include <Cobalt/CBindings/PlatformBindings.pkg>
     "#;
 
     // Generate bindings for the C bindings header
     let bindings = bindgen::Builder::default()
-        .clang_arg(format!("-I{}", include_path.display()))
+        .clang_arg(format!("-I{}", sdk_paths.include.display()))
         .header_contents("wrapper.h", wrapper_contents)
         .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))
         .array_pointers_in_arguments(true)
@@ -122,14 +312,25 @@ Cobalt Renderer SDK could not be found. Either
 
     // Write the bindings to the $OUT_DIR/bindings.rs file.
     // We will then include this output in the crate
-    let out_path = PathBuf::from(env::var("OUT_DIR").unwrap());
     bindings
         .write_to_file(out_path.join("bindings.rs"))
         .expect("Couldn't write bindings!");
 
+    // Provide SDK binary directory for dependencies
+    println!(
+        "cargo::rustc-env=RUNTIME_BIN_DIR={}",
+        sdk_paths.bin.display()
+    );
+
     // Rerun conditions
     println!("cargo:rerun-if-env-changed={SDK_PATH_VAR}");
-    println!("cargo:rerun-if-changed={}", sdk_path.display());
+    println!("cargo:rerun-if-env-changed={SDK_CACHE_VAR}");
+    println!("cargo:rerun-if-env-changed={SDK_INCLUDE_VAR}");
+    println!("cargo:rerun-if-env-changed={SDK_BIN_VAR}");
+    println!("cargo:rerun-if-env-changed={SDK_LIB_VAR}");
+    println!("cargo:rerun-if-changed={}", sdk_paths.include.display());
+    println!("cargo:rerun-if-changed={}", sdk_paths.bin.display());
+    println!("cargo:rerun-if-changed={}", sdk_paths.lib.display());
 }
 
 // Very rudimentary semvar parsing, always assumes just 3 numbers
@@ -154,7 +355,6 @@ struct SdkDownload {
 
 #[cfg(feature = "download_sdk")]
 fn find_sdk_download() -> Option<SdkDownload> {
-    // TODO(DTM): Doesn't include all releases
     let mut platform: Option<&str> = None;
     let mut toolchain: Option<&str> = None;
     let mut arch: Option<&str> = None;
@@ -188,25 +388,22 @@ fn find_sdk_download() -> Option<SdkDownload> {
         arch = Some("arm64");
     }
 
-    let downloads: std::collections::HashMap<&str, SdkDownload> = [
-        // TODO(DTM): Fill out with official release
-    ]
-    .into();
-
     let platform = platform?;
     let toolchain = toolchain?;
     let arch = arch?;
+    let download_key = format!("{}-{}-{}", platform, toolchain, arch);
 
-    downloads
-        .get(format!("{}-{}-{}", platform, toolchain, arch).as_str())
-        .cloned()
+    SDK_DOWNLOADS
+        .iter()
+        .find(|d| d.0 == download_key)
+        .map(|d| d.1.clone())
 }
 
 #[cfg(feature = "download_sdk")]
 fn download_verify_unzip_sdk(sdk: SdkDownload, out_dir: &std::path::Path) {
     // TODO(DTM): Not unzipping yet
     use sha2::Digest;
-    use std::io::{Read, Seek, Write};
+    use std::io::{Cursor, Read, Seek, Write};
 
     let response = ureq::get(sdk.download_url).call().unwrap();
     let status = response.status();
@@ -220,12 +417,32 @@ fn download_verify_unzip_sdk(sdk: SdkDownload, out_dir: &std::path::Path) {
     let mut sdk_file: Vec<u8> = vec![];
     reader.read_to_end(&mut sdk_file).unwrap();
 
+    // Verify download is correct
     let mut hasher = sha2::Sha256::new();
     hasher.update(&sdk_file);
     let hash = hasher.finalize();
-    let hash_bytes = hash.to_vec();
+    let actual_hash: String = hash.iter().map(|b| format!("{:02x}", b)).collect();
+    if actual_hash != sdk.hash {
+        panic!(
+            "Downloaded SDK has SHA256 hash of '{}', which does not match expected hash of '{}'",
+            &actual_hash, sdk.hash
+        );
+    }
 
-    println!("actual {:?} = expected {}", hash_bytes, sdk.hash);
-
-    todo!("Waiting for Cobalt release to test")
+    // Unzip SDK
+    let mut zip = zip::ZipArchive::new(std::io::Cursor::new(sdk_file))
+        .expect("SDK download was not a valid ZIP archive");
+    if let Err(e) = zip.extract(out_dir) {
+        // Attempt to
+        if let Err(e) = std::fs::remove_dir_all(out_dir) {
+            println!(
+                "Could not remove SDK directory '{}'. This may cause future build failures as path exists but contains invalid contents, {e}",
+                out_dir.display()
+            );
+        }
+        panic!(
+            "SDK could not be extracted to '{}', {e} ",
+            out_dir.display()
+        );
+    }
 }

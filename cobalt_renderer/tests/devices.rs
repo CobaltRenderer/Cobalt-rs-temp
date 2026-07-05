@@ -15,8 +15,7 @@ fn list_devices() {
     let library = cobalt_renderer::init().unwrap();
     let mut enumerator = library.renderer_plugin_enumerator();
 
-    let mut path = std::path::PathBuf::from(std::env::var("COBALT_SDK_PATH").unwrap());
-    path = path.join("Bin/x64");
+    let mut path = std::path::PathBuf::from(cobalt_renderer_sys::DEVELOPMENT_RUNTIME_BIN_DIR);
     enumerator.enumerate_plugins_in_directory(path).unwrap();
 
     for mut info in enumerator.all_plugins() {

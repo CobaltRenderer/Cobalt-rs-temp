@@ -3,8 +3,8 @@
 
 use crate::{RendererError, RendererResult};
 use crate::{RendererPlugin, RendererPluginEnumerator};
-use std::sync::Arc;
 use std::borrow::Cow;
+use std::sync::Arc;
 
 use cobalt_renderer_sys as sys;
 
@@ -34,14 +34,9 @@ impl Library {
         message: *const std::ffi::c_char,
         message_length: usize,
     ) {
-        let message_bytes = unsafe { std::slice::from_raw_parts(
-            message as *const u8,
-            message_length,
-        )};
-        let scope_bytes = unsafe { std::slice::from_raw_parts(
-            scope as *const u8,
-            scope_length,
-        )};
+        let message_bytes =
+            unsafe { std::slice::from_raw_parts(message as *const u8, message_length) };
+        let scope_bytes = unsafe { std::slice::from_raw_parts(scope as *const u8, scope_length) };
         let message: Cow<'_, str> = match std::str::from_utf8(message_bytes) {
             Ok(s) => Cow::Borrowed(s),
             Err(_) => {
@@ -74,12 +69,12 @@ impl Library {
     /// `plugin_path` should be a path to a shared library on disk that contains one or more renderer plugins.
     /// `index` is an optional index if the shared library contains multiple plugins. For shared libraries
     /// with a single plugin, it can be set to `None`.
-    /// 
+    ///
     /// This function will attempt to open the shared library and retrieve the plugin.
     /// The shared library will be automatically unloaded when this object and any other
     /// derivate objects are dropped. Multiple plugins may be loaded at the same time
     /// (e.g you may want to see what is available and select the appropriate plugin).
-    /// Loading the same renderer plugin multiple times should be avoided. 
+    /// Loading the same renderer plugin multiple times should be avoided.
     pub fn load_renderer_plugin(
         &mut self,
         plugin_path: impl AsRef<std::path::Path>,
@@ -119,7 +114,7 @@ impl Library {
 
         let mut handle = std::ptr::null_mut();
         unsafe {
-            return_on_failure!(sys::Cobalt_GetRendererInfo(
+            return_on_failure!(sys::Cobalt_GetRendererPlugin(
                 self.internal.handle,
                 lib_handle as *mut std::ffi::c_void,
                 index.unwrap_or_default(),
