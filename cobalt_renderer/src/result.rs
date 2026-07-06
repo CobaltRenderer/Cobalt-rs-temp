@@ -58,11 +58,11 @@ impl std::fmt::Display for RendererError {
             ),
             Self::InvalidLibraryError => write!(
                 f,
-                "The renderer plugin is not valid. The function 'GetRendererInfo' may not exist in the library."
+                "The renderer plugin is not valid. The function 'GetRendererPlugin' may not exist in the library."
             ),
             Self::FailedGetInfo => write!(
                 f,
-                "Failed to get renderer information. The call to 'GetRendererInfo' returned an error."
+                "Failed to get renderer information. The call to 'GetRendererPlugin' returned an error."
             ),
             Self::UnsupportedWindow => write!(
                 f,

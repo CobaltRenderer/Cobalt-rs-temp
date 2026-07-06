@@ -12,6 +12,7 @@ const SDK_INCLUDE_VAR: &str = "COBALT_INCLUDE_DIR";
 const SDK_LIB_VAR: &str = "COBALT_LIB_DIR";
 const SDK_BIN_VAR: &str = "COBALT_BIN_DIR";
 
+const SDK_BUILD_VAR: &str = "COBALT_SDK_BUILD_DIR";
 const SDK_CACHE_VAR: &str = "COBALT_SDK_CACHE_DIR";
 
 #[cfg(feature = "download_sdk")]
@@ -40,7 +41,7 @@ const SDK_DOWNLOADS: [(&str, SdkDownload); 4] = [
     (
         "windows-msvc-x64",
         SdkDownload {
-            download_url: "https://github.com/CobaltRenderer/Cobalt/releases/download/v2.0.0/CobaltRenderer-SDK-windows-msvc-x64-v2.0.0.zip ",
+            download_url: "https://github.com/CobaltRenderer/Cobalt/releases/download/v2.0.0/CobaltRenderer-SDK-windows-msvc-x64-v2.0.0.zip",
             hash: "2f9e0ce1bc8d52cfc2e3305024b701d78aba6fee39b37c90dc32851f7827041d",
         },
     ),
@@ -147,7 +148,6 @@ fn main() {
         sdk_paths = sdk_paths.or_else(|| {
             // Check if SDK has already been downloaded
 
-            use std::os::unix::process::CommandExt;
             let cache_path: PathBuf = match std::env::var_os(SDK_CACHE_VAR) {
                 Some(p) => p.into(),
                 None => out_path.join("CobaltSDK"),
@@ -156,7 +156,10 @@ fn main() {
                 return Some(SdkPaths::from_sdk_dir(cache_path));
             }
 
-            let build_dir = out_path.join("CobaltBuild");
+            let build_dir: PathBuf = match std::env::var_os(SDK_BUILD_VAR) {
+                Some(p) => p.into(),
+                None => out_path.join("CobaltBuild"),
+            };
             if !build_dir.exists() {
                 let repo = git2::Repository::clone(SDK_GIT_REPO, &build_dir)
                     .expect("Could not clone git repo for build");
@@ -167,10 +170,12 @@ fn main() {
                 repo.checkout_tree(&obj, None).unwrap();
             }
 
+            // TODO(DTM): Determine preset based on platform
+
             let mut config_proc = std::process::Command::new("cmake")
                 .current_dir(&build_dir)
                 .arg("--preset")
-                .arg("linux-clang-x64-debug")
+                .arg("win-msvc-x64-release")
                 .arg("-DCOBALT_USE_SDL3=OFF")
                 .arg("-DCOBALT_BUILD_TESTS=OFF")
                 .arg("-DCOBALT_BUILD_EXAMPLES=OFF")
@@ -190,7 +195,7 @@ fn main() {
                 .current_dir(&build_dir)
                 .arg("--build")
                 .arg("--preset")
-                .arg("linux-clang-x64-debug")
+                .arg("win-msvc-x64-release")
                 .arg("--target")
                 .arg("install")
                 .spawn()
@@ -203,16 +208,14 @@ fn main() {
             }
 
             // Move SDK build to cache
-            let build_out_path = build_dir.join("Output").join("SDK_Debug");
+            let build_out_path = build_dir.join("Output").join("SDK_RelWithDebInfo");
             assert_sdk_version(&build_out_path);
-            if let Err(e) = std::fs::remove_dir_all(&cache_path) {
-                if e.kind() != std::io::ErrorKind::NotFound {
-                    panic!(
-                        "Could not remove cache directory '{}', {}",
-                        cache_path.display(),
-                        e
-                    )
-                }
+            if let Err(e) = std::fs::remove_dir_all(&cache_path) && e.kind() != std::io::ErrorKind::NotFound {
+                panic!(
+                    "Could not remove cache directory '{}', {}",
+                    cache_path.display(),
+                    e
+                )
             }
             std::fs::rename(build_out_path, &cache_path)
                 .expect("Could not move SDK build to cache location");
@@ -361,7 +364,7 @@ fn find_sdk_download() -> Option<SdkDownload> {
 
     #[cfg(target_os = "windows")]
     {
-        platform = Some("win");
+        platform = Some("windows");
         toolchain = Some("msvc");
     }
     #[cfg(target_os = "macos")]

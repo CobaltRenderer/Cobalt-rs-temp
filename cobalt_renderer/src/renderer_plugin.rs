@@ -88,7 +88,7 @@ impl RendererPlugin {
     #[cfg(target_family = "windows")]
     pub(crate) fn new(
         module: Arc<libloading::os::windows::Library>,
-        handle: sys::Cobalt_RendererInfo,
+        handle: sys::Cobalt_RendererPlugin,
         library: Arc<LibraryInternal>,
     ) -> Self {
         RendererPlugin {
