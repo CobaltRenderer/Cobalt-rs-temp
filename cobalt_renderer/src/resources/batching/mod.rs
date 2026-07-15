@@ -1,15 +1,12 @@
 // Copyright (c) 2026, Maptek Pty Ltd
 // Licensed under the MIT License
 
-//! Utilities for batching data transfers and controlling timing
-
 use std::sync::Arc;
 
-use crate::renderer::RendererInternal;
+use crate::{RendererResult, renderer::RendererInternal};
 
 use cobalt_renderer_sys as sys;
 
-/// When the transfer can begin after being submitted
 #[repr(i32)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum StartTiming {
@@ -17,7 +14,6 @@ pub enum StartTiming {
     Immediately = sys::Cobalt_StartTiming_Immediately as i32,
 }
 
-/// When the transfer must be complete by
 #[repr(i32)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum EndTiming {
@@ -25,7 +21,6 @@ pub enum EndTiming {
     AnyFrame = sys::Cobalt_EndTiming_AnyFrame as i32,
 }
 
-/// Batches together one or more data transfers, allowing for specified start and end times
 pub struct TransferBatch {
     pub(crate) handle: sys::Cobalt_TransferBatch,
     _renderer: Arc<RendererInternal>,
@@ -42,10 +37,20 @@ impl TransferBatch {
         }
     }
 
-    pub fn submit_batch(&self) {
+    // NOTE(DTM): Bug in 2.0.0, SubmitBatch returns u8 instead of u32,
+    // cast should be removed in future versions when this is fixed and
+    // a warning is raised
+    #[warn(clippy::unnecessary_cast)]
+    pub fn submit_batch(&self) -> RendererResult<()> {
         unsafe {
-            sys::Cobalt_TransferBatch_SubmitBatch(self.handle);
+            let result = sys::Cobalt_TransferBatch_SubmitBatch(self.handle) as i32;
+            return_on_failure!(result);
         }
+        Ok(())
+    }
+
+    pub fn is_submitted(&self) -> bool {
+        unsafe { sys::Cobalt_TransferBatch_IsSubmitted(self.handle) != 0 }
     }
 
     pub fn is_complete(&self) -> bool {

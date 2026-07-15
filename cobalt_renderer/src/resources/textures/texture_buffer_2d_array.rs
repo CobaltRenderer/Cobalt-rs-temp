@@ -4,15 +4,14 @@ use num_enum::TryFromPrimitive;
 use std::sync::Arc;
 
 use super::{DataFormat, ImageFormat, SourceDataFormat, SourceImageFormat, TextureBuffer};
+use crate::RendererResult;
 use crate::render_tree::StateContainer;
 use crate::renderer::RendererInternal;
 use crate::resources::TextureId;
 use crate::resources::batching::TransferBatch;
-use crate::{RendererError, RendererResult};
 
 use cobalt_renderer_sys as sys;
 
-/// Series of 2D image textures on GPU
 pub struct TextureBuffer2DArray {
     pub(crate) handle: sys::Cobalt_TextureBuffer2DArray,
     _renderer: Arc<RendererInternal>,
@@ -148,7 +147,11 @@ impl TextureBuffer for TextureBuffer2DArray {
         self.handle as sys::Cobalt_TextureBuffer
     }
 
-    fn bind_to_state_container(&self, texture_id: TextureId, container: &mut impl StateContainer) {
+    fn bind_to_state_container(
+        &mut self,
+        texture_id: TextureId,
+        container: &mut impl StateContainer,
+    ) {
         unsafe {
             sys::Cobalt_StateContainer_BindTexture2DArray(
                 container.node_handle(),

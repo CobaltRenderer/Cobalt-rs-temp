@@ -162,7 +162,11 @@ fn main() {
     thread.join().unwrap();
 
     drop(frame_buffer);
-    context.renderer.lock().unwrap().wait_for_deferred_deletion_complete();
+    context
+        .renderer
+        .lock()
+        .unwrap()
+        .wait_for_deferred_deletion_complete();
 }
 
 fn update_thread(context: Arc<Context>) {

@@ -3,7 +3,6 @@
 
 use crate::{render_tree::StateContainer, resources::SamplerId};
 
-/// How textures are sampled outside their bounds
 #[repr(u32)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum WrapMode {
@@ -12,7 +11,6 @@ pub enum WrapMode {
     RepeatMirrored,
 }
 
-/// Filtering mode when sampling textures
 #[repr(u32)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FilterMode {
@@ -20,7 +18,6 @@ pub enum FilterMode {
     Linear,
 }
 
-/// Filtering mode when generating mipmaps
 #[repr(u32)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MipmapMode {
@@ -29,10 +26,19 @@ pub enum MipmapMode {
     Linear,
 }
 
-// Rust definitions
+// This is a workaround for Rust not having generic specialization
+// which would allow us to have different functions under the same name
+// that would take different input types and have different implementations.
+// Instead we have a trait which we only implement on some types
+// which then have specializations. Then we can have one generic
+// function which takes this trait and calls the specialized function
+// on the type. Not ideal but functional
 
-/// Defines how to sample a texture
 pub trait TextureSampler {
     #[doc(hidden)]
-    fn bind_to_state_container(&self, sampler_id: SamplerId, container: &mut impl StateContainer);
+    fn bind_to_state_container(
+        &mut self,
+        sampler_id: SamplerId,
+        container: &mut impl StateContainer,
+    );
 }

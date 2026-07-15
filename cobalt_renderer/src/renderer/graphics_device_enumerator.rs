@@ -4,9 +4,9 @@ use std::sync::Arc;
 
 use bitflags::bitflags;
 
+use crate::RendererPluginInternal;
+use crate::RendererResult;
 use crate::renderer::{DeviceType, Feature, GraphicsDevice};
-use crate::{RendererError, RendererResult};
-use crate::{RendererPlugin, RendererPluginInternal};
 
 use cobalt_renderer_sys as sys;
 

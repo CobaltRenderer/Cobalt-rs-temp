@@ -2,12 +2,11 @@
 // Licensed under the MIT License
 use std::sync::Arc;
 
+use crate::RendererResult;
 use crate::renderer::RendererInternal;
-use crate::{RendererError, RendererResult};
 
 use cobalt_renderer_sys as sys;
 
-/// Data types for state buffer fields
 #[repr(i32)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum StateBufferDataType {
@@ -19,7 +18,6 @@ pub enum StateBufferDataType {
     Float64 = sys::Cobalt_StateBufferDataType_Float64 as i32,
 }
 
-/// Layout of a state value buffer in a shader
 pub struct StateBufferLayout {
     pub(crate) handle: sys::Cobalt_StateBufferLayout,
     _renderer: Arc<RendererInternal>,

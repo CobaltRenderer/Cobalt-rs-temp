@@ -1,7 +1,7 @@
 // Copyright (c) 2026, Maptek Pty Ltd
 // Licensed under the MIT License
 
-use crate::{RendererError, RendererResult};
+use crate::{RendererError, RendererErrorKind, RendererResult};
 use crate::{RendererPlugin, RendererPluginEnumerator};
 use std::borrow::Cow;
 use std::sync::Arc;
@@ -92,15 +92,13 @@ impl Library {
                         | libloading::os::windows::LOAD_LIBRARY_SEARCH_DEFAULT_DIRS,
                 )
                 .map_err(|e| {
-                    log::error!("Failed to load library '{}', {e:?}", path.display());
-                    RendererError::LoadLibraryError
+                    RendererError::new_with_error(RendererErrorKind::LoadLibraryError, Box::new(e))
                 })?
             }
             #[cfg(target_family = "unix")]
             {
                 libloading::os::unix::Library::new(path).map_err(|e| {
-                    log::error!("Failed to load library '{}', {e:?}", path.display());
-                    RendererError::LoadLibraryError
+                    RendererError::new_with_error(RendererErrorKind::LoadLibraryError, Box::new(e))
                 })?
             }
         };

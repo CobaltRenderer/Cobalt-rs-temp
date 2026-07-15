@@ -5,14 +5,12 @@ use num_enum::TryFromPrimitive;
 use parking_lot::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 use std::sync::Arc;
 
-use crate::RendererPlugin;
 use crate::RendererPluginInternal;
 use crate::render_tree::*;
 use crate::resources::*;
 
 use cobalt_renderer_sys as sys;
 
-/// Optional renderer features
 #[repr(i32)]
 #[derive(TryFromPrimitive, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum RendererOption {
@@ -38,6 +36,10 @@ bitflags! {
 ///
 /// This object can be cloned and shared. The same underlying lock is shared with the renderer
 /// and all clones.
+///
+/// Alternatively, you can use a different locking mechanism. If your threading model prevents method calls
+/// during rendering you also don't need to use this. It's just a built in utility to help manage
+/// this requirement.
 #[derive(Clone)]
 pub struct GraphicsLock(Arc<RwLock<()>>);
 
@@ -49,40 +51,37 @@ impl GraphicsLock {
     /// It is advised to only hold the guard for a short time as it will block a new frame. If applicable,
     /// consider dropping the guard or re-locking to allow a new frame to begin.
     ///
-    /// This function is safe to call recursively.
+    /// This function is safe to call recursively and will starve out a new frame until all locks are released.
     pub fn lock(&self) -> RwLockReadGuard<'_, ()> {
         self.0.read_recursive()
     }
 
+    /// Acquire lock for frame to advance
     fn frame_lock(&self) -> RwLockWriteGuard<'_, ()> {
         self.0.write()
     }
 }
 
-/// Core object for creating objects and managing frames
-///
-/// `start_new_frame` is used to render a new frame.
-/// It's critical that all other graphics work is halted while that function call occurs.
-/// An associated [`GraphicsLock`] achieves this.
-///
-/// All content is added in under render passes which are set with `set_render_passes`.
 pub struct Renderer {
     internal: Arc<RendererInternal>,
     graphics_lock: GraphicsLock,
 }
 
-/// RendererInternal actually holds the handle to the C++ Renderer object
-/// It's expected that this type is wrapped in an `std::sync::Arc`
+/// Actual renderer handle, shared between many objects via `Arc<T>`
+/// to keep renderer object alive
 pub(crate) struct RendererInternal {
     pub(crate) handle: sys::Cobalt_Renderer,
-    plugin: Arc<RendererPluginInternal>,
+    _plugin: Arc<RendererPluginInternal>,
 }
 
 impl Renderer {
     pub(crate) fn new(handle: sys::Cobalt_Renderer, plugin: Arc<RendererPluginInternal>) -> Self {
         let lock = GraphicsLock(Arc::new(RwLock::new(())));
         Renderer {
-            internal: Arc::new(RendererInternal { handle, plugin }),
+            internal: Arc::new(RendererInternal {
+                handle,
+                _plugin: plugin,
+            }),
             graphics_lock: lock,
         }
     }
@@ -447,7 +446,7 @@ impl Renderer {
 
     /// Start rendering a new frame with the current render passes and their children.
     ///
-    /// If a frame is currently rendering, this call will block until it's done.
+    /// If a frame is currently rendering, this call will block until that frame is done.
     ///
     /// # Safety
     ///
@@ -467,25 +466,18 @@ impl Renderer {
         }
     }
 
-    /// Block until the current frame has finished drawing
     pub fn wait_for_draw_complete(&self) {
         unsafe {
             sys::Cobalt_Renderer_WaitForDrawComplete(self.internal.handle);
         }
     }
 
-    /// Block until the current frame has finished drawing and then all
-    /// output captures are done.
-    ///
-    /// When this function returns, all output captures can be read and should contain
-    /// the content from the just completed frame
     pub fn wait_for_output_capture_complete(&self) {
         unsafe {
             sys::Cobalt_Renderer_WaitForOutputCaptureComplete(self.internal.handle);
         }
     }
 
-    /// Block until all resources that were deferred for deletion are deleted
     pub fn wait_for_deferred_deletion_complete(&self) {
         unsafe {
             sys::Cobalt_Renderer_WaitForDeferredDeletionComplete(self.internal.handle);

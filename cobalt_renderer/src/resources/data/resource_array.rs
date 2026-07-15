@@ -5,7 +5,6 @@ use bitflags::bitflags;
 use cobalt_renderer_sys as sys;
 
 bitflags! {
-    /// Indicates how resource array memory will be used
     #[derive(Debug, Clone, Copy, PartialEq, Eq)]
     pub struct PerformanceHint : u32 {
         const Default = sys::Cobalt_ResourceArrayPerformanceHint_Default as u32;
@@ -21,7 +20,6 @@ bitflags! {
 }
 
 bitflags! {
-    /// Indicate how long resource array data needs to persist
     #[derive(Debug, Clone, Copy, PartialEq, Eq)]
     pub struct PersistenceFlags : u32 {
         const PersistAlways = sys::Cobalt_ResourceArrayDataPersistenceFlags_PersistAlways as u32;
@@ -30,7 +28,14 @@ bitflags! {
     }
 }
 
-/// A GPU buffer, either data array or texel array
+// This is a workaround for Rust not having generic specialization
+// which would allow us to have different functions under the same name
+// that would take different input types and have different implementations.
+// Instead we have a trait which we only implement on some types
+// which then have specializations. Then we can have one generic
+// function which takes this trait and calls the specialized function
+// on the type. Not ideal but functional
+
 pub trait ResourceArray {
     #[doc(hidden)]
     fn array_handle(&mut self) -> sys::Cobalt_ResourceArray;

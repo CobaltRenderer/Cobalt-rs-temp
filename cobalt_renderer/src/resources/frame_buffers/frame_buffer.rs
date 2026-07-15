@@ -3,22 +3,22 @@
 use std::ffi::c_void;
 #[allow(unused)]
 use std::num::NonZero;
+#[allow(unused)]
 use std::ptr::NonNull;
 use std::sync::Arc;
 
 #[cfg(feature = "raw_window_handle")]
-use raw_window_handle::{RawDisplayHandle, RawWindowHandle};
+use raw_window_handle::RawWindowHandle;
 
 use bitflags::bitflags;
 
 use super::FrameBufferOutput;
 use crate::renderer::RendererInternal;
 use crate::resources::textures::TextureBuffer2D;
-use crate::{RendererError, RendererResult};
+use crate::{RendererError, RendererErrorKind, RendererResult};
 
 use cobalt_renderer_sys as sys;
 
-/// Type for attached texture to be treated as
 #[repr(i32)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AttachmentType {
@@ -27,7 +27,6 @@ pub enum AttachmentType {
     Stencil = sys::Cobalt_AttachmentType_Stencil as i32,
 }
 
-/// Backing depth/stencil texture for attached window
 #[repr(i32)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum WindowDepthStencilMode {
@@ -39,7 +38,6 @@ pub enum WindowDepthStencilMode {
     DepthFloat32StencilUInt8 = sys::Cobalt_WindowDepthStencilMode_DepthFloat32StencilUInt8 as i32,
 }
 
-/// Color space for attached window
 #[repr(i32)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum WindowColorSpaceMode {
@@ -83,6 +81,7 @@ pub enum Window {
 
 impl Window {
     #[cfg(feature = "raw_window_handle")]
+    #[allow(unused_variables)]
     pub fn new_from_raw_handles(
         display_handle: raw_window_handle::RawDisplayHandle,
         window_handle: raw_window_handle::RawWindowHandle,
@@ -91,8 +90,10 @@ impl Window {
             #[cfg(target_os = "windows")]
             RawWindowHandle::Win32(w) => {
                 let hinstance = w.hinstance.ok_or_else(|| {
-                    log::error!("Win32 window does not contain a required hinstance pointer");
-                    RendererError::UnsupportedWindow
+                    RendererError::new_with_error(
+                        RendererErrorKind::UnsupportedWindow,
+                        "Win32 window does not contain a required hinstance pointer".into(),
+                    )
                 })?;
                 Ok(Self::Win32 {
                     hinstance,
@@ -109,51 +110,59 @@ impl Window {
                         surface: w.surface,
                     })
                 } else {
-                    log::error!("Display handle must be Wayland");
-                    Err(RendererError::UnsupportedWindow)
+                    Err(RendererError::new_with_error(RendererErrorKind::UnsupportedWindow, "Display handle must be Wayland variant because window handle is Wayland variant".into()))
                 }
             }
             #[cfg(target_os = "linux")]
             RawWindowHandle::Xcb(w) => {
                 if let RawDisplayHandle::Xcb(d) = display_handle {
                     let connection = d.connection.ok_or_else(|| {
-                        log::error!("Xcb display does not contain a required connection pointer");
-                        RendererError::UnsupportedWindow
+                        Err(RendererError::new_with_error(
+                            RendererErrorKind::UnsupportedWindow,
+                            "Xcb display does not contain a required display pointer".into(),
+                        ))
                     })?;
                     Ok(Self::Xcb {
                         connection,
                         window: w.window.get() as i32,
                     })
                 } else {
-                    log::error!("Display handle must be Xcb");
-                    Err(RendererError::UnsupportedWindow)
+                    Err(RendererError::new_with_error(
+                        RendererErrorKind::UnsupportedWindow,
+                        "Display handle must be Xcb variant because window handle is Xcb variant"
+                            .into(),
+                    ))
                 }
             }
             #[cfg(target_os = "linux")]
             RawWindowHandle::Xlib(w) => {
                 if let RawDisplayHandle::Xlib(d) = display_handle {
                     let display = d.display.ok_or_else(|| {
-                        log::error!("Xlib display does not contain a required display pointer");
-                        RendererError::UnsupportedWindow
+                        Err(RendererError::new_with_error(
+                            RendererErrorKind::UnsupportedWindow,
+                            "Xlib display does not contain a required display pointer".into(),
+                        ))
                     })?;
                     Ok(Self::Xlib {
                         display,
                         window: w.window as i32,
                     })
                 } else {
-                    log::error!("Display handle must be Xlib");
-                    Err(RendererError::UnsupportedWindow)
+                    Err(RendererError::new_with_error(
+                        RendererErrorKind::UnsupportedWindow,
+                        "Display handle must be Xlib variant because window handle is Xlib variant"
+                            .into(),
+                    ))
                 }
             }
-            _ => {
-                log::error!("Display is not supported on this platform");
-                Err(RendererError::UnsupportedWindow)
-            }
+            _ => Err(RendererError::new_with_error(
+                RendererErrorKind::UnsupportedWindow,
+                "Display is not supported on this platform".into(),
+            )),
         }
     }
 }
 
-/// Frame buffer with attached window or textures to be rendered to
 pub struct FrameBuffer {
     pub(crate) handle: sys::Cobalt_FrameBuffer,
     _renderer: Arc<RendererInternal>,
@@ -170,6 +179,17 @@ impl FrameBuffer {
         }
     }
 
+    /// # Safety
+    ///
+    /// [`Window`] contains raw pointers to system displays and windows. These must be valid pointers
+    /// and the resources they point to must be valid for the lifetime of the framebuffer.
+    /// This includes during it's deferred deletion at the beginning of the next frame.
+    ///
+    /// To avoid potential use after free, it's recommended to drop the framebuffer, wait
+    /// for it's deletion using [`crate::renderer::Renderer::wait_for_deferred_deletion_complete`],
+    /// then delete the window.
+    ///
+    /// When the window is resized, a call to [`FrameBuffer::notify_window_resized`] should be called.
     pub unsafe fn bind_window(
         &mut self,
         window: Window,
@@ -290,7 +310,7 @@ impl FrameBuffer {
 
     pub fn bind_texture(
         &mut self,
-        texture: &TextureBuffer2D,
+        texture: &mut TextureBuffer2D,
         attachment_type: AttachmentType,
         index: usize,
     ) -> RendererResult<()> {
@@ -317,7 +337,7 @@ impl FrameBuffer {
 
     pub fn bind_multi_sampling_resolve_texture(
         &mut self,
-        texture: &TextureBuffer2D,
+        texture: &mut TextureBuffer2D,
         attachment_type: AttachmentType,
         index: usize,
     ) -> RendererResult<()> {
@@ -360,7 +380,7 @@ impl FrameBuffer {
 
     pub fn add_output_capture_target(
         &mut self,
-        target: &FrameBufferOutput,
+        target: &mut FrameBufferOutput,
         attachment_type: AttachmentType,
         index: usize,
     ) {
@@ -374,7 +394,7 @@ impl FrameBuffer {
         }
     }
 
-    pub fn remove_output_capture_target(&mut self, target: &FrameBufferOutput) {
+    pub fn remove_output_capture_target(&mut self, target: &mut FrameBufferOutput) {
         unsafe { sys::Cobalt_FrameBuffer_RemoveOutputCaptureTarget(self.handle, target.handle) }
     }
 }

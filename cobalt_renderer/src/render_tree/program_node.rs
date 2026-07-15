@@ -3,10 +3,10 @@
 use std::sync::Arc;
 
 use super::StateGroupNode;
+use crate::RendererResult;
 use crate::renderer::RendererInternal;
 use crate::resources::StateValueId;
 use crate::resources::programs::ShaderProgram;
-use crate::{RendererError, RendererResult};
 
 use cobalt_renderer_sys as sys;
 
@@ -18,7 +18,6 @@ use cobalt_renderer_sys as sys;
 // function which takes this trait and calls the specialized function
 // on the type. Not ideal but functional
 
-/// A type which can be used to set a shader constant state value, scalar or vector
 pub trait ConstantStateValue {
     #[doc(hidden)]
     fn set_constant_state_value(
@@ -29,7 +28,6 @@ pub trait ConstantStateValue {
     );
 }
 
-/// A type which can be used to set a shader constant state value, only matrix
 pub trait ConstantStateValueMatrix {
     #[doc(hidden)]
     fn set_constant_state_value_matrix(
@@ -226,7 +224,6 @@ declare_set_state_value_matrix!(
     sys::Cobalt_ProgramNode_SetConstantStateValueM4Float32
 );
 
-/// Defines which shader program is used to render content
 pub struct ProgramNode {
     pub(crate) handle: sys::Cobalt_ProgramNode,
     _renderer: Arc<RendererInternal>,
@@ -285,7 +282,10 @@ impl ProgramNode {
         }
     }
 
-    pub fn bind_shader_program(&mut self, shader_program: &ShaderProgram) -> RendererResult<()> {
+    pub fn bind_shader_program(
+        &mut self,
+        shader_program: &mut ShaderProgram,
+    ) -> RendererResult<()> {
         unsafe {
             return_on_failure!(sys::Cobalt_ProgramNode_BindShaderProgram(
                 self.handle,

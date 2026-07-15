@@ -2,12 +2,11 @@
 // Licensed under the MIT License
 use std::sync::Arc;
 
+use crate::RendererResult;
 use crate::renderer::RendererInternal;
-use crate::{RendererError, RendererResult};
 
 use cobalt_renderer_sys as sys;
 
-/// Capture are read a data array to CPU memory
 pub struct DataArrayOutput {
     pub(crate) handle: sys::Cobalt_DataArrayOutput,
     _renderer: Arc<RendererInternal>,
@@ -69,7 +68,7 @@ impl DataArrayOutput {
         unsafe { sys::Cobalt_DataArrayOutput_GetEntrySizeInBytes(self.handle) }
     }
 
-    pub fn read_buffer_data<S: Sized>(&self, buffer: &mut [S]) -> RendererResult<()> {
+    pub fn read_buffer_data<S: Sized>(&mut self, buffer: &mut [S]) -> RendererResult<()> {
         unsafe {
             return_on_failure!(sys::Cobalt_DataArrayOutput_ReadBufferData(
                 self.handle,
@@ -80,7 +79,7 @@ impl DataArrayOutput {
         Ok(())
     }
 
-    pub fn read_counter_value(&self) -> RendererResult<u32> {
+    pub fn read_counter_value(&mut self) -> RendererResult<u32> {
         let mut value: u32 = 0;
         unsafe {
             return_on_failure!(sys::Cobalt_DataArrayOutput_ReadCounterValue(

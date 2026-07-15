@@ -4,9 +4,9 @@ use bitflags::bitflags;
 use std::sync::Arc;
 
 use super::StateBufferLayout;
+use crate::RendererResult;
 use crate::renderer::RendererInternal;
 use crate::resources::StateValueId;
-use crate::{RendererError, RendererResult};
 
 use cobalt_renderer_sys as sys;
 
@@ -241,7 +241,6 @@ declare_set_state_value_matrix!(
     sys::Cobalt_StateBuffer_SetStateValueForPageM4Float32
 );
 
-/// A buffer with multiple state values
 pub struct StateBuffer {
     pub(crate) handle: sys::Cobalt_StateBuffer,
     _renderer: Arc<RendererInternal>,
@@ -283,7 +282,7 @@ impl StateBuffer {
 
     pub fn bind_buffer_layout(
         &mut self,
-        state_buffer_layout: &StateBufferLayout,
+        state_buffer_layout: &mut StateBufferLayout,
     ) -> RendererResult<()> {
         unsafe {
             return_on_failure!(sys::Cobalt_StateBuffer_BindBufferLayout(

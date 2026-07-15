@@ -3,13 +3,12 @@
 use std::sync::Arc;
 
 use super::{DataPersistenceFlags, PerformanceHint};
+use crate::RendererResult;
 use crate::renderer::{Renderer, RendererInternal};
 use crate::resources::batching::TransferBatch;
-use crate::{RendererError, RendererResult};
 
 use cobalt_renderer_sys as sys;
 
-// Data type for a index attribute
 #[repr(i32)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum IndexAttributeType {
@@ -17,7 +16,6 @@ pub enum IndexAttributeType {
     UInt32 = sys::Cobalt_IndexAttributeType_UInt32 as i32,
 }
 
-// Indices for input assembly backed by an index buffer
 pub struct IndexAttribute {
     pub(crate) handle: sys::Cobalt_IndexAttribute,
     _renderer: Arc<RendererInternal>,
@@ -67,21 +65,12 @@ impl IndexAttribute {
         data: &[S],
         entry_stride_in_bytes: Option<usize>,
     ) -> RendererResult<()> {
-        let element_size: usize = core::mem::size_of::<S>();
-
-        assert!(
-            self.element_size == element_size,
-            "Input element size ({} bytes) must have same size as attribute element size ({} bytes)",
-            element_size,
-            self.element_size,
-        );
-
         unsafe {
             return_on_failure!(sys::Cobalt_IndexAttribute_SetInitialData(
                 self.handle,
                 data.as_ptr() as *const u8,
                 data.len(),
-                entry_stride_in_bytes.unwrap_or(element_size),
+                entry_stride_in_bytes.unwrap_or(self.element_size),
             ))
         }
         Ok(())
@@ -94,13 +83,6 @@ impl IndexAttribute {
         entry_stride_in_bytes: Option<usize>,
         transfer_batch: Option<&TransferBatch>,
     ) -> RendererResult<()> {
-        let element_size: usize = core::mem::size_of::<S>();
-        assert!(
-            self.element_size == element_size,
-            "Input element size ({} bytes) must have same size as attribute element size ({} bytes)",
-            element_size,
-            self.element_size,
-        );
         let transfer_batch = match transfer_batch {
             None => std::ptr::null_mut(),
             Some(b) => b.handle,
@@ -112,7 +94,7 @@ impl IndexAttribute {
                 data.as_ptr() as *const u8,
                 data.len(),
                 initial_vertex_no,
-                entry_stride_in_bytes.unwrap_or(element_size),
+                entry_stride_in_bytes.unwrap_or(self.element_size),
                 transfer_batch,
             ))
         }

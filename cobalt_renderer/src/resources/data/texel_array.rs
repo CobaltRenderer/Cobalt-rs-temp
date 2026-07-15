@@ -4,10 +4,11 @@ use bitflags::bitflags;
 use num_enum::TryFromPrimitive;
 use std::sync::Arc;
 
+use super::ResourceArray;
 use super::TexelArrayOutput;
+use crate::RendererResult;
 use crate::renderer::RendererInternal;
 use crate::resources::batching::TransferBatch;
-use crate::{RendererError, RendererResult};
 
 use cobalt_renderer_sys as sys;
 
@@ -44,7 +45,6 @@ const fn equivalent_data_formats(source_format: SourceDataFormat, format: DataFo
     }
 }
 
-/// GPU element format for each pixel in the texel array
 #[repr(i32)]
 #[derive(TryFromPrimitive, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ImageFormat {
@@ -78,7 +78,6 @@ impl ImageFormat {
     }
 }
 
-/// GPU data format for each element in each pixel of the texel array
 #[repr(i32)]
 #[derive(TryFromPrimitive, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DataFormat {
@@ -110,15 +109,14 @@ impl DataFormat {
     pub const fn binary_equivalent_to(&self, format: DataFormat) -> bool {
         match self {
             Self::UInt8 | Self::UNorm8 => matches!(format, DataFormat::UInt8 | DataFormat::UNorm8),
-            // Eq is not const so we can't do a direct comparison, so cast down to u32 to compare
+            // NOTE(DTM): Eq is not const so we can't do a direct comparison, so cast down to i32 to compare
             // Maybe in future it will be and we can compare directly
             // (https://stackoverflow.com/questions/60125657/rust-cant-use-enum-in-const-fn)
-            f => (*f as u32) == (format as u32),
+            f => (*f as i32) == (format as i32),
         }
     }
 }
 
-/// CPU side element format for each pixel in the texel array
 #[repr(i32)]
 #[derive(TryFromPrimitive, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SourceImageFormat {
@@ -144,7 +142,6 @@ impl SourceImageFormat {
     }
 }
 
-/// CPU side data format for each element in each pixel of the texel array
 #[repr(i32)]
 #[derive(TryFromPrimitive, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SourceDataFormat {
@@ -179,7 +176,6 @@ impl SourceDataFormat {
 }
 
 bitflags! {
-    /// Specifies how a texel array will be used
     #[derive(Debug, Clone, Copy, PartialEq, Eq)]
     pub struct TexelArrayUsageFlags : u32 {
         const Default = sys::Cobalt_TexelArrayUsageFlags_Default as u32;
@@ -190,7 +186,6 @@ bitflags! {
     }
 }
 
-/// GPU buffer for shader input/output, better for large data and image data
 pub struct TexelArray {
     pub(crate) handle: sys::Cobalt_TexelArray,
     _renderer: Arc<RendererInternal>,
@@ -298,12 +293,18 @@ impl TexelArray {
         Ok(())
     }
 
-    pub fn add_output_capture_target(&mut self, output: &TexelArrayOutput) {
+    pub fn add_output_capture_target(&mut self, output: &mut TexelArrayOutput) {
         unsafe { sys::Cobalt_TexelArray_AddOutputCaptureTarget(self.handle, output.handle) }
     }
 
-    pub fn remove_output_capture_target(&mut self, output: &TexelArrayOutput) {
+    pub fn remove_output_capture_target(&mut self, output: &mut TexelArrayOutput) {
         unsafe { sys::Cobalt_TexelArray_RemoveOutputCaptureTarget(self.handle, output.handle) }
+    }
+}
+
+impl ResourceArray for TexelArray {
+    fn array_handle(&mut self) -> sys::Cobalt_ResourceArray {
+        self.handle as sys::Cobalt_ResourceArray
     }
 }
 

@@ -3,15 +3,14 @@
 use bitflags::bitflags;
 use std::sync::Arc;
 
-use super::DataArrayOutput;
+use super::{DataArrayOutput, ResourceArray};
+use crate::RendererResult;
 use crate::renderer::RendererInternal;
 use crate::resources::batching::TransferBatch;
-use crate::{RendererError, RendererResult};
 
 use cobalt_renderer_sys as sys;
 
 bitflags! {
-    /// Specifies how a data array will be used
     #[derive(Debug, Clone, Copy, PartialEq, Eq)]
     pub struct DataArrayUsageFlags : u32 {
         const Default = 0;
@@ -25,7 +24,6 @@ bitflags! {
     }
 }
 
-/// GPU buffer for shader input/output, indirect drawing and more
 pub struct DataArray {
     pub(crate) handle: sys::Cobalt_DataArray,
     _renderer: Arc<RendererInternal>,
@@ -115,7 +113,7 @@ impl DataArray {
 
     pub fn queue_data_transfer(
         &mut self,
-        target_buffer: &DataArray,
+        target_buffer: &mut DataArray,
         transfer_count: usize,
         source_buffer_offset: usize,
         target_buffer_offset: usize,
@@ -138,12 +136,18 @@ impl DataArray {
         Ok(())
     }
 
-    pub fn add_output_capture_target(&mut self, output: &DataArrayOutput) {
+    pub fn add_output_capture_target(&mut self, output: &mut DataArrayOutput) {
         unsafe { sys::Cobalt_DataArray_AddOutputCaptureTarget(self.handle, output.handle) }
     }
 
-    pub fn remove_output_capture_target(&mut self, output: &DataArrayOutput) {
+    pub fn remove_output_capture_target(&mut self, output: &mut DataArrayOutput) {
         unsafe { sys::Cobalt_DataArray_RemoveOutputCaptureTarget(self.handle, output.handle) }
+    }
+}
+
+impl ResourceArray for DataArray {
+    fn array_handle(&mut self) -> sys::Cobalt_ResourceArray {
+        self.handle as sys::Cobalt_ResourceArray
     }
 }
 

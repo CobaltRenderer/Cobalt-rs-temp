@@ -1,8 +1,6 @@
 // Copyright (c) 2026, Maptek Pty Ltd
 // Licensed under the MIT License
 
-//! Texture images and samplers
-
 mod texture_buffer;
 mod texture_buffer_1d;
 mod texture_buffer_1d_array;

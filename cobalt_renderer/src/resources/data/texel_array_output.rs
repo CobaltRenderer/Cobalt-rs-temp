@@ -4,12 +4,11 @@ use num_enum::TryFromPrimitive;
 use std::sync::Arc;
 
 use super::{SourceDataFormat, SourceImageFormat};
+use crate::RendererResult;
 use crate::renderer::RendererInternal;
-use crate::{RendererError, RendererResult};
 
 use cobalt_renderer_sys as sys;
 
-/// Capture are read a texel array to CPU memory
 pub struct TexelArrayOutput {
     pub(crate) handle: sys::Cobalt_TexelArrayOutput,
     _renderer: Arc<RendererInternal>,
@@ -68,7 +67,7 @@ impl TexelArrayOutput {
     }
 
     pub fn read_buffer_data<S: Sized>(
-        &self,
+        &mut self,
         buffer: &mut [S],
         image_format: SourceImageFormat,
         data_format: SourceDataFormat,

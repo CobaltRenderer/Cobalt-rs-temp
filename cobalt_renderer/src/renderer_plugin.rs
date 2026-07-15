@@ -1,6 +1,6 @@
 // Copyright (c) 2026, Maptek Pty Ltd
 // Licensed under the MIT License
-use num_enum::FromPrimitive;
+use num_enum::TryFromPrimitive;
 
 use crate::renderer::{DeviceEnumerationFlags, GraphicsDeviceEnumerator};
 use crate::{LibraryInternal, RendererResult};
@@ -9,17 +9,14 @@ use std::sync::Arc;
 
 use cobalt_renderer_sys as sys;
 
-/// Graphics API family a plugin uses
 #[repr(i32)]
-#[derive(FromPrimitive, Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(TryFromPrimitive, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ApiFamily {
     OpenGl = sys::Cobalt_ApiFamily_OpenGL as i32,
     OpenGles = sys::Cobalt_ApiFamily_OpenGLES as i32,
     Direct3d = sys::Cobalt_ApiFamily_Direct3D as i32,
     Vulkan = sys::Cobalt_ApiFamily_Vulkan as i32,
     Metal = sys::Cobalt_ApiFamily_Metal as i32,
-    #[num_enum(default)]
-    Unknown,
 }
 
 impl std::fmt::Display for ApiFamily {
@@ -30,13 +27,11 @@ impl std::fmt::Display for ApiFamily {
             Self::Direct3d => "Direct3D",
             Self::Vulkan => "Vulkan",
             Self::Metal => "Metal",
-            Self::Unknown => "Unknown",
         };
         write!(f, "{}", family)
     }
 }
 
-/// Graphics API version a plugin uses
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct ApiVersion {
     pub major: u32,
@@ -81,7 +76,7 @@ pub(crate) struct RendererPluginInternal {
     _module: Arc<libloading::os::windows::Library>,
     #[cfg(target_family = "unix")]
     _module: Arc<libloading::os::unix::Library>,
-    pub(crate) _library: Arc<LibraryInternal>,
+    _library: Arc<LibraryInternal>,
 }
 
 impl RendererPlugin {
@@ -117,7 +112,7 @@ impl RendererPlugin {
 
     pub fn api_family(&self) -> ApiFamily {
         let value = unsafe { sys::Cobalt_RendererPlugin_GetApiFamily(self.handle) };
-        ApiFamily::from_primitive(value as i32)
+        ApiFamily::try_from_primitive(value as i32).unwrap()
     }
 
     pub fn target_api_version(&self) -> ApiVersion {
@@ -185,8 +180,6 @@ impl RendererPlugin {
         }
     }
 
-    // Create a device enumerator, which finds graphics devices
-    // for rendering
     pub fn create_device_enumerator(
         &mut self,
         flags: DeviceEnumerationFlags,

@@ -210,7 +210,9 @@ fn main() {
             // Move SDK build to cache
             let build_out_path = build_dir.join("Output").join("SDK_RelWithDebInfo");
             assert_sdk_version(&build_out_path);
-            if let Err(e) = std::fs::remove_dir_all(&cache_path) && e.kind() != std::io::ErrorKind::NotFound {
+            if let Err(e) = std::fs::remove_dir_all(&cache_path)
+                && e.kind() != std::io::ErrorKind::NotFound
+            {
                 panic!(
                     "Could not remove cache directory '{}', {}",
                     cache_path.display(),

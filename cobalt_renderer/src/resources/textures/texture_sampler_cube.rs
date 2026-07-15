@@ -7,7 +7,6 @@ use crate::{render_tree::StateContainer, renderer::RendererInternal, resources::
 
 use cobalt_renderer_sys as sys;
 
-/// Sampler for [`TextureBufferCube`](`super::TextureBufferCube`)
 pub struct TextureSamplerCube {
     pub(crate) handle: sys::Cobalt_TextureSamplerCube,
     _renderer: Arc<RendererInternal>,
@@ -74,7 +73,11 @@ impl TextureSamplerCube {
 }
 
 impl TextureSampler for TextureSamplerCube {
-    fn bind_to_state_container(&self, sampler_id: SamplerId, container: &mut impl StateContainer) {
+    fn bind_to_state_container(
+        &mut self,
+        sampler_id: SamplerId,
+        container: &mut impl StateContainer,
+    ) {
         unsafe {
             sys::Cobalt_StateContainer_BindSamplerCube(
                 container.node_handle(),

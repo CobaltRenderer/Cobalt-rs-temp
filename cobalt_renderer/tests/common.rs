@@ -79,12 +79,12 @@ pub fn setup_capture() -> CaptureContext {
     let mut frame_buffer = renderer.create_frame_buffer();
     frame_buffer.define_viewport_region(&[0, 0], &[1024, 1024]);
     frame_buffer
-        .bind_texture(&texture, frame_buffers::AttachmentType::Color, 0)
+        .bind_texture(&mut texture, frame_buffers::AttachmentType::Color, 0)
         .unwrap();
 
-    let output_capture = renderer.create_frame_buffer_output();
+    let mut output_capture = renderer.create_frame_buffer_output();
     frame_buffer.add_output_capture_target(
-        &output_capture,
+        &mut output_capture,
         frame_buffers::AttachmentType::Color,
         0,
     );

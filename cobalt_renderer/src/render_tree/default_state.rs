@@ -7,7 +7,6 @@ use crate::renderer::RendererInternal;
 
 use cobalt_renderer_sys as sys;
 
-/// Default shader state for a render pass and program pair, potentially overloaded by child nodes
 pub struct DefaultState {
     pub(crate) handle: sys::Cobalt_DefaultState,
     _renderer: Arc<RendererInternal>,

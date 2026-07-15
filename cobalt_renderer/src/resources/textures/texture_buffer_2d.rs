@@ -6,15 +6,14 @@ use std::sync::Arc;
 use super::{
     DataFormat, ImageFormat, SampleCount, SourceDataFormat, SourceImageFormat, TextureBuffer,
 };
+use crate::RendererResult;
 use crate::render_tree::StateContainer;
 use crate::renderer::RendererInternal;
 use crate::resources::TextureId;
 use crate::resources::batching::TransferBatch;
-use crate::{RendererError, RendererResult};
 
 use cobalt_renderer_sys as sys;
 
-/// 2D image texture on GPU
 pub struct TextureBuffer2D {
     pub(crate) handle: sys::Cobalt_TextureBuffer2D,
     _renderer: Arc<RendererInternal>,
@@ -153,7 +152,11 @@ impl TextureBuffer for TextureBuffer2D {
         self.handle as sys::Cobalt_TextureBuffer
     }
 
-    fn bind_to_state_container(&self, texture_id: TextureId, container: &mut impl StateContainer) {
+    fn bind_to_state_container(
+        &mut self,
+        texture_id: TextureId,
+        container: &mut impl StateContainer,
+    ) {
         unsafe {
             sys::Cobalt_StateContainer_BindTexture2D(
                 container.node_handle(),

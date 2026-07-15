@@ -1,8 +1,6 @@
 // Copyright (c) 2026, Maptek Pty Ltd
 // Licensed under the MIT License
 
-//! Various GPU buffer types for holding data and shader input
-
 mod data_array;
 mod data_array_output;
 mod resource_array;

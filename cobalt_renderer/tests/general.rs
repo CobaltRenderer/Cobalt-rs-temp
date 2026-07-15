@@ -96,7 +96,9 @@ fn output_capture() {
     shader_program.compile_program().unwrap();
 
     let mut program_node = context.renderer.create_program_node();
-    program_node.bind_shader_program(&shader_program).unwrap();
+    program_node
+        .bind_shader_program(&mut shader_program)
+        .unwrap();
     render_pass_node.add_child_node(&program_node, None);
 
     let mut state_group_node = context.renderer.create_state_group_node();
@@ -173,17 +175,19 @@ fn output_capture() {
 
     renderable
         .bind_vertex_attribute(
-            &position_attribute,
+            &mut position_attribute,
             shader_program.vertex_attribute_id("position").unwrap(),
         )
         .unwrap();
     renderable
         .bind_vertex_attribute(
-            &color_attribute,
+            &mut color_attribute,
             shader_program.vertex_attribute_id("color").unwrap(),
         )
         .unwrap();
-    renderable.bind_index_attribute(&index_attribute).unwrap();
+    renderable
+        .bind_index_attribute(&mut index_attribute)
+        .unwrap();
     renderable.set_vertex_count(indices.len(), 0, 0, 0).unwrap();
 
     state_group_node.add_child_node(&renderable);

@@ -12,7 +12,7 @@ license = "MIT"
 links = "cobaltrenderer"
 
 [features]
-default = ["build_sdk"]
+default = ["download_sdk"]
 download_sdk = ["dep:ureq", "dep:sha2", "dep:zip"]
 build_sdk = ["dep:git2", "dep:cmake"]
 

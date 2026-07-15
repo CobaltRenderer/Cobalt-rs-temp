@@ -7,11 +7,10 @@ use raw_window_handle::RawDisplayHandle;
 
 use super::GraphicsDeviceEnumerator;
 use crate::renderer::{Renderer, RendererInitializationFlags, RendererOption};
-use crate::{RendererError, RendererResult};
+use crate::{RendererError, RendererErrorKind, RendererResult};
 
 use cobalt_renderer_sys as sys;
 
-/// Physical implementation of a graphics device
 #[repr(i32)]
 #[derive(TryFromPrimitive, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum DeviceType {
@@ -21,7 +20,6 @@ pub enum DeviceType {
     Unknown = sys::Cobalt_DeviceType_Unknown as i32,
 }
 
-/// Memory types available to a graphics device
 #[repr(i32)]
 #[derive(TryFromPrimitive, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum MemoryType {
@@ -29,7 +27,6 @@ pub enum MemoryType {
     Shared = sys::Cobalt_MemoryType_Shared as i32,
 }
 
-/// Features available for graphics devices to implement
 #[repr(i32)]
 #[derive(TryFromPrimitive, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Feature {
@@ -50,18 +47,12 @@ pub enum Feature {
     MipmapLevelBias = sys::Cobalt_Feature_MipmapLevelBias as i32,
 }
 
-/// Depth range used by the renderer API and graphics device
 #[repr(i32)]
-#[derive(TryFromPrimitive, Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(TryFromPrimitive, Default, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum DepthRange {
+    #[default]
     ZeroToOne = sys::Cobalt_DepthRange_ZeroToOne as i32,
     NegativeOneToOne = sys::Cobalt_DepthRange_NegativeOneToOne as i32,
-}
-
-impl Default for DepthRange {
-    fn default() -> Self {
-        Self::ZeroToOne
-    }
 }
 
 /// Manufacturer of graphics device
@@ -169,23 +160,27 @@ impl WindowSystem {
             #[cfg(target_os = "linux")]
             RawDisplayHandle::Xcb(w) => {
                 let connection = w.connection.ok_or_else(|| {
-                    log::error!("Xcb display does not contain a required connection pointer");
-                    RendererError::UnsupportedWindow
+                    Err(RendererError::new_with_error(
+                        RendererErrorKind::UnsupportedWindow,
+                        "Xcb display does not contain a required connection pointer".into(),
+                    ))
                 })?;
                 Ok(Self::Xcb { connection })
             }
             #[cfg(target_os = "linux")]
             RawDisplayHandle::Xlib(w) => {
                 let display = w.display.ok_or_else(|| {
-                    log::error!("Xlib display does not contain a required display pointer");
-                    RendererError::UnsupportedWindow
+                    Err(RendererError::new_with_error(
+                        RendererErrorKind::UnsupportedWindow,
+                        "Xlib display does not contain a required display pointer".into(),
+                    ))
                 })?;
                 Ok(Self::Xlib { display })
             }
-            _ => {
-                log::error!("Display is not supported on this platform");
-                Err(RendererError::UnsupportedWindow)
-            }
+            _ => Err(RendererError::new_with_error(
+                RendererErrorKind::UnsupportedWindow,
+                "RawDisplayHandle variant is not supported on this platform".into(),
+            )),
         }
     }
 }
@@ -380,16 +375,14 @@ impl<'a> GraphicsDevice<'a> {
         // std::mem::variant_count (https://doc.rust-lang.org/std/mem/fn.variant_count.html)
         // But for now we will allocate space and resize if needed
         // like we do for `device_name`
-
         let mut capacity = 16;
         loop {
-            let mut features: Vec<Feature> = vec![Feature::AnisotropicFiltering; capacity];
-
+            let mut features: Vec<sys::Cobalt_Feature> = vec![0; capacity];
             let mut length = features.len();
             unsafe {
                 sys::Cobalt_GraphicsDevice_GetAllSupportedFeatures(
                     self.handle,
-                    features.as_mut_ptr() as *mut sys::Cobalt_Feature,
+                    features.as_mut_ptr(),
                     &mut length,
                 );
             }
@@ -399,14 +392,14 @@ impl<'a> GraphicsDevice<'a> {
             }
 
             features.truncate(length);
-            return features;
+            let features: Result<Vec<Feature>, num_enum::TryFromPrimitiveError<Feature>> = features
+                .into_iter()
+                .map(Feature::try_from_primitive)
+                .collect();
+            return features.unwrap();
         }
     }
 
-    /// Create a [`renderer`](crate::renderer::Renderer) with the selected
-    /// features and options
-    ///
-    /// Any features that may be used must be specified here
     pub fn create_renderer(
         &mut self,
         enabled_features: &[Feature],

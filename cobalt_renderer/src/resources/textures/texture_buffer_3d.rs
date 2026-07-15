@@ -4,15 +4,14 @@ use num_enum::TryFromPrimitive;
 use std::sync::Arc;
 
 use super::{DataFormat, ImageFormat, SourceDataFormat, SourceImageFormat, TextureBuffer};
+use crate::RendererResult;
 use crate::render_tree::StateContainer;
 use crate::renderer::RendererInternal;
 use crate::resources::TextureId;
 use crate::resources::batching::TransferBatch;
-use crate::{RendererError, RendererResult};
 
 use cobalt_renderer_sys as sys;
 
-/// 3D image texture on GPU
 pub struct TextureBuffer3D {
     pub(crate) handle: sys::Cobalt_TextureBuffer3D,
     _renderer: Arc<RendererInternal>,
@@ -142,7 +141,11 @@ impl TextureBuffer for TextureBuffer3D {
         self.handle as sys::Cobalt_TextureBuffer
     }
 
-    fn bind_to_state_container(&self, texture_id: TextureId, container: &mut impl StateContainer) {
+    fn bind_to_state_container(
+        &mut self,
+        texture_id: TextureId,
+        container: &mut impl StateContainer,
+    ) {
         unsafe {
             sys::Cobalt_StateContainer_BindTexture3D(
                 container.node_handle(),

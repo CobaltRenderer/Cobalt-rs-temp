@@ -3,13 +3,12 @@
 use std::sync::Arc;
 
 use super::{DataPersistenceFlags, PerformanceHint};
+use crate::RendererResult;
 use crate::renderer::{Renderer, RendererInternal};
 use crate::resources::batching::TransferBatch;
-use crate::{RendererError, RendererResult};
 
 use cobalt_renderer_sys as sys;
 
-/// Data type of a vertex attribute
 #[repr(i32)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum VertexAttributeType {
@@ -28,7 +27,6 @@ pub enum VertexAttributeType {
     A2B10G10R10UNorm = sys::Cobalt_VertexAttributeType_A2B10G10R10UNorm as i32,
 }
 
-/// Vertex attribute input for a shader program, backed by a vertex buffer
 pub struct VertexAttribute {
     pub(crate) handle: sys::Cobalt_VertexAttribute,
     _renderer: Arc<RendererInternal>,
@@ -96,21 +94,12 @@ impl VertexAttribute {
         data: &[S],
         entry_stride_in_bytes: Option<usize>,
     ) -> RendererResult<()> {
-        let element_size: usize = core::mem::size_of::<S>();
-
-        assert!(
-            self.element_size == element_size,
-            "Input element size ({} bytes) must have same size as attribute element size ({} bytes)",
-            element_size,
-            self.element_size,
-        );
-
         unsafe {
             return_on_failure!(sys::Cobalt_VertexAttribute_SetInitialData(
                 self.handle,
                 data.as_ptr() as *const u8,
                 data.len(),
-                entry_stride_in_bytes.unwrap_or(element_size),
+                entry_stride_in_bytes.unwrap_or(self.element_size),
             ))
         }
         Ok(())
@@ -123,13 +112,6 @@ impl VertexAttribute {
         entry_stride_in_bytes: Option<usize>,
         transfer_batch: Option<&TransferBatch>,
     ) -> RendererResult<()> {
-        let element_size: usize = core::mem::size_of::<S>();
-        assert!(
-            self.element_size == element_size,
-            "Input element size ({} bytes) must have same size as attribute element size ({} bytes)",
-            element_size,
-            self.element_size,
-        );
         let transfer_batch = match transfer_batch {
             None => std::ptr::null_mut(),
             Some(b) => b.handle,
@@ -140,7 +122,7 @@ impl VertexAttribute {
                 data.as_ptr() as *const u8,
                 data.len(),
                 initial_vertex_no,
-                entry_stride_in_bytes.unwrap_or(element_size),
+                entry_stride_in_bytes.unwrap_or(self.element_size),
                 transfer_batch,
             ))
         }

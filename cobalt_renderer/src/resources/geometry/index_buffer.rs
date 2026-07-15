@@ -3,14 +3,13 @@
 use std::sync::Arc;
 
 use super::IndexAttribute;
+use crate::RendererResult;
 use crate::renderer::RendererInternal;
 use crate::resources::batching::TransferBatch;
 use crate::resources::data::TexelArray;
-use crate::{RendererError, RendererResult};
 
 use cobalt_renderer_sys as sys;
 
-/// Buffer to back a single index attribute
 pub struct IndexBuffer {
     pub(crate) handle: sys::Cobalt_IndexBuffer,
     _renderer: Arc<RendererInternal>,

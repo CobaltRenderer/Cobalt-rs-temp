@@ -1,82 +1,88 @@
 // Copyright (c) 2026, Maptek Pty Ltd
 // Licensed under the MIT License
-use cobalt_renderer_sys as sys;
-
-use num_enum::FromPrimitive;
 
 /// Standard result type for the Cobalt Renderer
 pub type RendererResult<T> = std::result::Result<T, RendererError>;
 
-/// Standard error type for the Cobalt Renderer
+/// Standard error kind for the Cobalt Renderer
 ///
-/// In most instances the error type will be `Failure` as the
+/// In most instances the error kind will be `Failure` as the
 /// C++ renderer does not return error types itself, instead most error
 /// causes are reported in the log (see documentation for more)
-#[derive(FromPrimitive, Debug, Copy, Clone, PartialEq, Eq)]
-#[repr(i32)]
-pub enum RendererError {
-    Failure = sys::COBALT_FAILURE,
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum RendererErrorKind {
+    RendererError,
     LoadLibraryError,
-    InvalidLibraryError,
-    FailedGetInfo,
     UnsupportedWindow,
-    InvalidPath,
     IoError,
-    #[num_enum(default)]
-    UnknownError,
+}
+
+/// Standard error type for the Cobalt Renderer
+///
+/// Errors have a kind and optionally a source error
+pub struct RendererError {
+    kind: RendererErrorKind,
+    error: Option<Box<dyn std::error::Error>>,
+}
+
+impl RendererError {
+    /// Create a new [`RendererError`] without a source error
+    pub fn new(kind: RendererErrorKind) -> RendererError {
+        RendererError { kind, error: None }
+    }
+
+    /// Create a new [`RendererError`] with a source error
+    pub fn new_with_error(
+        kind: RendererErrorKind,
+        error: Box<dyn std::error::Error>,
+    ) -> RendererError {
+        RendererError {
+            kind,
+            error: Some(error),
+        }
+    }
+
+    /// Get error kind
+    pub fn kind(&self) -> RendererErrorKind {
+        self.kind
+    }
+
+    /// Get a reference to the source error
+    pub fn error(&self) -> Option<&dyn std::error::Error> {
+        self.error.as_ref().map(|e| e.as_ref())
+    }
 }
 
 /// Check the result of an expression and immediately return a [`RendererError`]
 /// if not successful.
 macro_rules! return_on_failure {
     ($code:expr) => {{
-        use num_enum::FromPrimitive;
         let result: i32 = $code;
-        if result != sys::COBALT_SUCCESS {
-            return Err(RendererError::from_primitive(result));
+        if result != cobalt_renderer_sys::COBALT_SUCCESS {
+            return Err(crate::RendererError::new(
+                crate::RendererErrorKind::RendererError,
+            ));
         }
     }};
 }
 
 impl From<std::io::Error> for RendererError {
-    fn from(_value: std::io::Error) -> Self {
-        // TODO(DTM): More comprehensive handling here
-        Self::IoError
+    fn from(error: std::io::Error) -> Self {
+        RendererError::new_with_error(RendererErrorKind::IoError, Box::new(error))
     }
 }
 
 impl std::fmt::Display for RendererError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Failure => write!(
-                f,
-                "An error occurred in the function call. Please see log output for reason. This is often caused by improper API usage."
-            ),
-            Self::LoadLibraryError => write!(
-                f,
-                "The renderer plugin could not be loaded. The system call 'LoadLibrary' (win32) or 'dlopen' (linux) failed. This may be due to the shared library file not existing at the specified path or the file not being a valid library file."
-            ),
-            Self::InvalidLibraryError => write!(
-                f,
-                "The renderer plugin is not valid. The function 'GetRendererPlugin' may not exist in the library."
-            ),
-            Self::FailedGetInfo => write!(
-                f,
-                "Failed to get renderer information. The call to 'GetRendererPlugin' returned an error."
-            ),
-            Self::UnsupportedWindow => write!(
-                f,
-                "The raw window handle provided is for an unsupported platform. Supported platforms are: Win32"
-            ),
-            Self::InvalidPath => write!(
-                f,
-                "The path provided was not valid unicode and cannot be used"
-            ),
-            Self::IoError => write!(f, "IO Error"),
-            Self::UnknownError => write!(
-                f,
-                "An unknown error code was returned from the renderer plugin. This may indicate an out of date bindings ABI or a serious problem in the plugin."
-            ),
+        match &self.error {
+            None => write!(f, "{:?}", self.kind),
+            Some(e) => write!(f, "{:?}, {}", self.kind, e),
         }
+    }
+}
+
+impl std::fmt::Debug for RendererError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self)
     }
 }

@@ -3,14 +3,13 @@
 use std::sync::Arc;
 
 use super::StateContainer;
+use crate::RendererResult;
 use crate::resources::data::DataArray;
 use crate::resources::geometry::{IndexAttribute, VertexAttribute};
-use crate::{RendererError, RendererResult};
 use crate::{renderer::RendererInternal, resources::VertexAttributeId};
 
 use cobalt_renderer_sys as sys;
 
-/// The structure of the data and what primitive type it represents
 #[repr(i32)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum PrimitiveMode {
@@ -21,7 +20,6 @@ pub enum PrimitiveMode {
     TriangleStrip = sys::Cobalt_PrimitiveMode_TriangleStrip as i32,
 }
 
-/// Structure of indirect draw parameters which should be reflected in GPU buffers
 #[repr(C)]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct IndirectDrawParams {
@@ -31,7 +29,6 @@ pub struct IndirectDrawParams {
     first_instance: u32,
 }
 
-/// Structure of indexed indirect draw parameters which should be reflected in GPU buffers
 #[repr(C)]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct IndexedIndirectDrawParams {
@@ -42,7 +39,6 @@ pub struct IndexedIndirectDrawParams {
     first_instance: u32,
 }
 
-/// Defines what data to draw, the graphics content
 pub struct RenderableNode {
     pub(crate) handle: sys::Cobalt_RenderableNode,
     _renderer: Arc<RendererInternal>,
@@ -61,7 +57,7 @@ impl RenderableNode {
 
     pub fn bind_vertex_attribute(
         &mut self,
-        attribute: &VertexAttribute,
+        attribute: &mut VertexAttribute,
         shader_attribute_id: VertexAttributeId,
     ) -> RendererResult<()> {
         unsafe {
@@ -76,7 +72,7 @@ impl RenderableNode {
 
     pub fn bind_vertex_instance_attribute(
         &mut self,
-        attribute: &VertexAttribute,
+        attribute: &mut VertexAttribute,
         shader_attribute_id: VertexAttributeId,
     ) -> RendererResult<()> {
         unsafe {
@@ -89,7 +85,7 @@ impl RenderableNode {
         Ok(())
     }
 
-    pub fn bind_index_attribute(&mut self, attribute: &IndexAttribute) -> RendererResult<()> {
+    pub fn bind_index_attribute(&mut self, attribute: &mut IndexAttribute) -> RendererResult<()> {
         unsafe {
             return_on_failure!(sys::Cobalt_RenderableNode_BindIndexAttribute(
                 self.handle,

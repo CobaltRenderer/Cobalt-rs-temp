@@ -3,13 +3,12 @@
 use num_enum::TryFromPrimitive;
 use std::sync::Arc;
 
+use crate::RendererResult;
 use crate::renderer::RendererInternal;
 use crate::resources::textures::{SourceDataFormat, SourceImageFormat};
-use crate::{RendererError, RendererResult};
 
 use cobalt_renderer_sys as sys;
 
-// Capture and read a frame buffer to CPU memory
 pub struct FrameBufferOutput {
     pub(crate) handle: sys::Cobalt_FrameBufferOutput,
     _renderer: Arc<RendererInternal>,

@@ -8,7 +8,6 @@ use crate::resources::frame_buffers::{AttachmentType, FrameBuffer};
 
 use cobalt_renderer_sys as sys;
 
-/// How existing data in the frame buffer should be handled before use
 #[repr(i32)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AttachmentLoadBehavior {
@@ -16,7 +15,6 @@ pub enum AttachmentLoadBehavior {
     UndefinedInitialData = sys::Cobalt_AttachmentLoadBehavior_UndefinedInitialData as i32,
 }
 
-/// How rendered data should be handled before storing in the frame buffer
 #[repr(i32)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AttachmentStoreBehavior {
@@ -24,7 +22,6 @@ pub enum AttachmentStoreBehavior {
     UndefinedFinalData = sys::Cobalt_AttachmentStoreBehavior_UndefinedFinalData as i32,
 }
 
-/// Defines where content is rendered to with an attached frame buffer
 pub struct RenderPassNode {
     pub(crate) handle: sys::Cobalt_RenderPassNode,
     _renderer: Arc<RendererInternal>,
@@ -38,7 +35,6 @@ pub struct RenderPassNode {
 // function which takes this trait and calls the specialized function
 // on the type. Not ideal but functional
 
-/// A type that can be used to clear all values in a frame buffer
 pub trait ClearDataType: Sized {
     #[doc(hidden)]
     fn set_attachment_clear_data(

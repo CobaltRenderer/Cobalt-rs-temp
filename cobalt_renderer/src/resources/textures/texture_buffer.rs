@@ -7,7 +7,6 @@ use crate::{render_tree::StateContainer, resources::TextureId};
 
 use cobalt_renderer_sys as sys;
 
-/// GPU element format for each pixel in the texture
 #[repr(i32)]
 #[derive(TryFromPrimitive, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ImageFormat {
@@ -40,7 +39,6 @@ impl ImageFormat {
     }
 }
 
-/// GPU data format for each element in each pixel of the texture
 #[repr(i32)]
 #[derive(TryFromPrimitive, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DataFormat {
@@ -149,7 +147,6 @@ impl DataFormat {
     }
 }
 
-/// CPU side element format for each pixel in the texture
 #[repr(i32)]
 #[derive(TryFromPrimitive, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SourceImageFormat {
@@ -180,7 +177,6 @@ impl SourceImageFormat {
     }
 }
 
-/// CPU side data format for each element in each pixel of the texture
 #[repr(i32)]
 #[derive(TryFromPrimitive, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SourceDataFormat {
@@ -237,7 +233,6 @@ impl SourceDataFormat {
     }
 }
 
-/// Face of a cube
 #[repr(i32)]
 #[derive(TryFromPrimitive, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CubeMapFace {
@@ -249,7 +244,6 @@ pub enum CubeMapFace {
     NegativeZ = sys::Cobalt_CubeMapFace_NegativeZ as i32,
 }
 
-/// Number of samples per pixel for super sampled textures
 #[repr(i32)]
 #[derive(TryFromPrimitive, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SampleCount {
@@ -262,7 +256,6 @@ pub enum SampleCount {
 }
 
 bitflags! {
-    /// Specifies how the texture will be used
     #[derive(Debug, Clone, Copy, PartialEq, Eq)]
     pub struct TextureUsageFlags : u32
     {
@@ -274,7 +267,6 @@ bitflags! {
 }
 
 bitflags! {
-    /// Indicates how texture memory will be used
     #[derive(Debug, Clone, Copy, PartialEq, Eq)]
     pub struct PerformanceHint : u32
     {
@@ -291,7 +283,6 @@ bitflags! {
 }
 
 bitflags! {
-    /// Indicate how long texture data needs to persist
     #[derive(Debug, Clone, Copy, PartialEq, Eq)]
     pub struct DataPersistenceFlags : u32 {
         const PersistAlways = sys::Cobalt_TextureDataPersistenceFlags_PersistAlways as u32;
@@ -300,7 +291,14 @@ bitflags! {
     }
 }
 
-/// An image on the GPU
+// This is a workaround for Rust not having generic specialization
+// which would allow us to have different functions under the same name
+// that would take different input types and have different implementations.
+// Instead we have a trait which we only implement on some types
+// which then have specializations. Then we can have one generic
+// function which takes this trait and calls the specialized function
+// on the type. Not ideal but functional
+
 pub trait TextureBuffer {
     #[doc(hidden)]
     fn texture_handle(&self) -> sys::Cobalt_TextureBuffer;
@@ -338,5 +336,9 @@ pub trait TextureBuffer {
     }
 
     #[doc(hidden)]
-    fn bind_to_state_container(&self, texture_id: TextureId, container: &mut impl StateContainer);
+    fn bind_to_state_container(
+        &mut self,
+        texture_id: TextureId,
+        container: &mut impl StateContainer,
+    );
 }

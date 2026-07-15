@@ -3,22 +3,19 @@
 use std::path::Path;
 use std::sync::Arc;
 
-use crate::{ApiFamily, LibraryInternal, RendererError};
-use crate::{RendererPlugin, RendererResult};
+use crate::{ApiFamily, LibraryInternal, RendererPlugin};
+use crate::{RendererError, RendererErrorKind, RendererResult};
 
 use cobalt_renderer_sys as sys;
 
 // Windows
-#[cfg(target_family = "windows")]
+#[cfg(target_os = "windows")]
 const PLUGIN_EXTENSION: &str = "dll";
 // macOS and iOS
-#[cfg(all(target_family = "unix", any(target_os = "macos", target_os = "ios")))]
+#[cfg(any(target_os = "macos", target_os = "ios"))]
 const PLUGIN_EXTENSION: &str = "dylib";
-// Linux
-#[cfg(all(
-    target_family = "unix",
-    not(any(target_os = "macos", target_os = "ios"))
-))]
+// Unix and others
+#[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "ios")))]
 const PLUGIN_EXTENSION: &str = "so";
 
 // Preferred plugin preference list
@@ -30,7 +27,7 @@ const PLUGIN_EXTENSION: &str = "so";
 // Windows
 // Prioritize Direct3D 11 due to stability and generally better performance
 // Then Direct3D 12, Vulkan and OpenGL
-#[cfg(target_family = "windows")]
+#[cfg(target_os = "windows")]
 const PLUGIN_PREFERENCE: [(ApiFamily, u32); 4] = [
     (ApiFamily::Direct3d, 11),
     (ApiFamily::Direct3d, 12),
@@ -39,21 +36,18 @@ const PLUGIN_PREFERENCE: [(ApiFamily, u32); 4] = [
 ];
 // macOS and iOS
 // Prioritize Metal, then Vulkan (via MoltenVK), then OpenGL
-#[cfg(all(target_family = "unix", any(target_os = "macos", target_os = "ios")))]
+#[cfg(any(target_os = "macos", target_os = "ios"))]
 const PLUGIN_PREFERENCE: [(ApiFamily, u32); 3] = [
     (ApiFamily::Metal, u32::MAX),
     (ApiFamily::Vulkan, u32::MAX),
     (ApiFamily::OpenGl, u32::MAX),
 ];
-// macOS and iOS
-// Prioritize Vulkan, then OpenGL
-#[cfg(all(
-    target_family = "unix",
-    not(any(target_os = "macos", target_os = "ios"))
-))]
+// Unix and others
+#[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "ios")))]
 const PLUGIN_PREFERENCE: [(ApiFamily, u32); 2] =
     [(ApiFamily::Vulkan, u32::MAX), (ApiFamily::OpenGl, u32::MAX)];
 
+// TODO(DTM): Should this exist?
 pub const DEVELOPMENT_RUNTIME_BIN_DIR: &str = sys::DEVELOPMENT_RUNTIME_BIN_DIR;
 
 /// Discover renderer plugins and evaluate the preferred plugin for the current platform
@@ -112,20 +106,18 @@ impl RendererPluginEnumerator {
                         | libloading::os::windows::LOAD_LIBRARY_SEARCH_DEFAULT_DIRS,
                 )
                 .map_err(|e| {
-                    log::error!("Failed to load library '{}', {e:?}", path.display());
-                    RendererError::LoadLibraryError
+                    RendererError::new_with_error(RendererErrorKind::LoadLibraryError, Box::new(e))
                 })?
             }
             #[cfg(target_family = "unix")]
             {
                 libloading::os::unix::Library::new(path).map_err(|e| {
-                    log::error!("Failed to load library '{}', {e:?}", path.display());
-                    RendererError::LoadLibraryError
+                    RendererError::new_with_error(RendererErrorKind::LoadLibraryError, Box::new(e))
                 })?
             }
         };
 
-        // Work around to get raw handle for GetRendererInfo
+        // Work around to get raw handle for GetRendererPlugin
         let lib_handle = library.into_raw();
         #[cfg(target_family = "windows")]
         let library = Arc::new(unsafe { libloading::os::windows::Library::from_raw(lib_handle) });

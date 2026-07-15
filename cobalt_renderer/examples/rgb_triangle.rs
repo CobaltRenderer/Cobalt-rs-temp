@@ -163,7 +163,9 @@ fn main() {
 
     // Create program node
     let mut program_node = renderer.create_program_node();
-    program_node.bind_shader_program(&shader_program).unwrap();
+    program_node
+        .bind_shader_program(&mut shader_program)
+        .unwrap();
     render_pass_node.add_child_node(&program_node, None);
 
     // Create the state group node and any pipeline settings
@@ -229,13 +231,13 @@ fn main() {
     // Bind the attributes to the renderables and the shader
     renderable
         .bind_vertex_attribute(
-            &position_attribute,
+            &mut position_attribute,
             shader_program.vertex_attribute_id("position").unwrap(),
         )
         .unwrap();
     renderable
         .bind_vertex_attribute(
-            &color_attribute,
+            &mut color_attribute,
             shader_program.vertex_attribute_id("color").unwrap(),
         )
         .unwrap();

@@ -4,16 +4,15 @@ use bitflags::bitflags;
 use num_enum::TryFromPrimitive;
 use std::sync::Arc;
 
+use crate::RendererResult;
 use crate::renderer::RendererInternal;
 use crate::resources::data::StateBufferLayout;
 use crate::resources::{
     ResourceArrayId, SamplerId, StateBufferId, StateValueId, TextureId, VertexAttributeId,
 };
-use crate::{RendererError, RendererResult};
 
 use cobalt_renderer_sys as sys;
 
-/// Stage of a shader in the graphics pipeline
 #[repr(i32)]
 #[derive(TryFromPrimitive, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ShaderStage {
@@ -23,15 +22,17 @@ pub enum ShaderStage {
     Compute = sys::Cobalt_ShaderStage_Compute as i32,
 }
 
-/// Shader code language
 #[repr(i32)]
 #[derive(TryFromPrimitive, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CodeFormat {
-    Glsl = sys::Cobalt_CodeFormat_GLSL as i32,
     Hlsl = sys::Cobalt_CodeFormat_HLSL as i32,
-    Spirv = sys::Cobalt_CodeFormat_SPIRV as i32,
     Dxbc = sys::Cobalt_CodeFormat_DXBC as i32,
+    Dxil = sys::Cobalt_CodeFormat_DXIL as i32,
+    Spirv = sys::Cobalt_CodeFormat_SPIRV as i32,
+    SpirvAssembly = sys::Cobalt_CodeFormat_SPIRVAssembly as i32,
+    Glsl = sys::Cobalt_CodeFormat_GLSL as i32,
     Msl = sys::Cobalt_CodeFormat_MSL as i32,
+    Air = sys::Cobalt_CodeFormat_AIR as i32,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -100,7 +101,6 @@ pub enum ShaderTargetInfo {
     Metal,
 }
 
-/// A full shader program with multiple stages
 pub struct ShaderProgram {
     pub(crate) handle: sys::Cobalt_ShaderProgram,
     _renderer: Arc<RendererInternal>,
@@ -193,10 +193,6 @@ impl ShaderProgram {
         Ok(())
     }
 
-    /// Load a shader and potentially convert it
-    ///
-    /// If the shader code was invalid or couldn't be converted, an error will be returned.
-    /// Logs should be checked for further information.
     pub fn load_shader_stage(
         &mut self,
         stage: ShaderStage,
@@ -381,10 +377,6 @@ impl ShaderProgram {
         Ok(())
     }
 
-    /// Compile and link the program once all stages are loaded
-    ///
-    /// If the code couldn't be compiled, and error will be returned. Logs should be checked
-    /// for full compiler diagnostics
     pub fn compile_program(&mut self) -> RendererResult<()> {
         unsafe { return_on_failure!(sys::Cobalt_ShaderProgram_CompileProgram(self.handle)) }
         Ok(())

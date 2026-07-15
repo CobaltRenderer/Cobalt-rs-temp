@@ -3,14 +3,13 @@
 use std::sync::Arc;
 
 use super::VertexAttribute;
+use crate::RendererResult;
 use crate::renderer::RendererInternal;
 use crate::resources::batching::TransferBatch;
 use crate::resources::data::TexelArray;
-use crate::{RendererError, RendererResult};
 
 use cobalt_renderer_sys as sys;
 
-/// Buffer to back one or more vertex attributes
 pub struct VertexBuffer {
     pub(crate) handle: sys::Cobalt_VertexBuffer,
     _renderer: Arc<RendererInternal>,

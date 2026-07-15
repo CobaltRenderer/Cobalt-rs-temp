@@ -16,7 +16,6 @@ use cobalt_renderer_sys as sys;
 // function which takes this trait and calls the specialized function
 // on the type. Not ideal but functional
 
-/// A type which can be used to set a shader state value, scalar or vector
 pub trait StateValue {
     #[doc(hidden)]
     fn set_state_value(
@@ -27,7 +26,6 @@ pub trait StateValue {
     );
 }
 
-/// A type which can be used to set a shader state value, only matrix
 pub trait StateValueMatrix {
     #[doc(hidden)]
     fn set_state_value_matrix(
@@ -148,7 +146,6 @@ declare_set_state_value_matrix!(
     sys::Cobalt_StateContainer_SetStateValueM4Float32
 );
 
-/// A type which can have it's shader state values and textures changed
 pub trait StateContainer: Sized {
     #[doc(hidden)]
     fn node_handle(&mut self) -> sys::Cobalt_StateContainer;
@@ -174,8 +171,8 @@ pub trait StateContainer: Sized {
     fn bind_texture_with_combined_sampler_2d(
         &mut self,
         texture_id: TextureId,
-        texture: &TextureBuffer2D,
-        sampler: &TextureSampler2D,
+        texture: &mut TextureBuffer2D,
+        sampler: &mut TextureSampler2D,
     ) {
         unsafe {
             sys::Cobalt_StateContainer_BindTextureWithCombinedSampler2D(
@@ -190,8 +187,8 @@ pub trait StateContainer: Sized {
     fn bind_texture_with_combined_sampler_1d(
         &mut self,
         texture_id: TextureId,
-        texture: &TextureBuffer1D,
-        sampler: &TextureSampler1D,
+        texture: &mut TextureBuffer1D,
+        sampler: &mut TextureSampler1D,
     ) {
         unsafe {
             sys::Cobalt_StateContainer_BindTextureWithCombinedSampler1D(
@@ -205,8 +202,8 @@ pub trait StateContainer: Sized {
     fn bind_texture_with_combined_sampler_3d(
         &mut self,
         texture_id: TextureId,
-        texture: &TextureBuffer3D,
-        sampler: &TextureSampler3D,
+        texture: &mut TextureBuffer3D,
+        sampler: &mut TextureSampler3D,
     ) {
         unsafe {
             sys::Cobalt_StateContainer_BindTextureWithCombinedSampler3D(
@@ -220,8 +217,8 @@ pub trait StateContainer: Sized {
     fn bind_texture_with_combined_sampler_cube(
         &mut self,
         texture_id: TextureId,
-        texture: &TextureBufferCube,
-        sampler: &TextureSamplerCube,
+        texture: &mut TextureBufferCube,
+        sampler: &mut TextureSamplerCube,
     ) {
         unsafe {
             sys::Cobalt_StateContainer_BindTextureWithCombinedSamplerCube(
@@ -235,8 +232,8 @@ pub trait StateContainer: Sized {
     fn bind_texture_with_combined_sampler_1d_array(
         &mut self,
         texture_id: TextureId,
-        texture: &TextureBuffer1DArray,
-        sampler: &TextureSampler1DArray,
+        texture: &mut TextureBuffer1DArray,
+        sampler: &mut TextureSampler1DArray,
     ) {
         unsafe {
             sys::Cobalt_StateContainer_BindTextureWithCombinedSampler1DArray(
@@ -250,8 +247,8 @@ pub trait StateContainer: Sized {
     fn bind_texture_with_combined_sampler_2d_array(
         &mut self,
         texture_id: TextureId,
-        texture: &TextureBuffer2DArray,
-        sampler: &TextureSampler2DArray,
+        texture: &mut TextureBuffer2DArray,
+        sampler: &mut TextureSampler2DArray,
     ) {
         unsafe {
             sys::Cobalt_StateContainer_BindTextureWithCombinedSampler2DArray(
@@ -265,8 +262,8 @@ pub trait StateContainer: Sized {
     fn bind_texture_with_combined_sampler_cube_array(
         &mut self,
         texture_id: TextureId,
-        texture: &TextureBufferCubeArray,
-        sampler: &TextureSamplerCubeArray,
+        texture: &mut TextureBufferCubeArray,
+        sampler: &mut TextureSamplerCubeArray,
     ) {
         unsafe {
             sys::Cobalt_StateContainer_BindTextureWithCombinedSamplerCubeArray(
@@ -277,7 +274,7 @@ pub trait StateContainer: Sized {
             )
         }
     }
-    fn bind_texture(&mut self, texture_id: TextureId, texture: &impl TextureBuffer) {
+    fn bind_texture(&mut self, texture_id: TextureId, texture: &mut impl TextureBuffer) {
         texture.bind_to_state_container(texture_id, self)
     }
 
@@ -290,7 +287,7 @@ pub trait StateContainer: Sized {
         }
     }
 
-    fn bind_sampler(&mut self, sampler_id: SamplerId, sampler: &impl TextureSampler) {
+    fn bind_sampler(&mut self, sampler_id: SamplerId, sampler: &mut impl TextureSampler) {
         sampler.bind_to_state_container(sampler_id, self)
     }
 
@@ -306,7 +303,7 @@ pub trait StateContainer: Sized {
     fn bind_state_buffer(
         &mut self,
         state_buffer_id: StateBufferId,
-        state_buffer: &StateBuffer,
+        state_buffer: &mut StateBuffer,
         state_buffer_page_no: Option<u32>,
     ) {
         unsafe {
@@ -331,7 +328,7 @@ pub trait StateContainer: Sized {
     fn bind_data_array(
         &mut self,
         resource_array_id: ResourceArrayId,
-        data_array: DataArray,
+        data_array: &mut DataArray,
         reset_counter: bool,
     ) {
         unsafe {
@@ -344,7 +341,11 @@ pub trait StateContainer: Sized {
         }
     }
 
-    fn bind_texel_array(&mut self, resource_array_id: ResourceArrayId, texel_array: TexelArray) {
+    fn bind_texel_array(
+        &mut self,
+        resource_array_id: ResourceArrayId,
+        texel_array: &mut TexelArray,
+    ) {
         unsafe {
             sys::Cobalt_StateContainer_BindTexelArray(
                 self.node_handle() as sys::Cobalt_StateContainer,
