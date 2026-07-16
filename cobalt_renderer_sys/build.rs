@@ -20,7 +20,7 @@ const SDK_DOWNLOADS: [(&str, SdkDownload); 4] = [
     (
         "macos-clang-arm64",
         SdkDownload {
-            download_url: "https://github.com/CobaltRenderer/Cobalt/releases/download/v2.0.0/CoobaltRenderer-SDK-macos-clang-arm64-v2.0.0.zip",
+            download_url: "https://github.com/CobaltRenderer/Cobalt/releases/download/v2.0.0/CobaltRenderer-SDK-macos-clang-arm64-v2.0.0.zip",
             hash: "f0db7acd3f7a1f27336861c4b223ad407a39b3040f75a87b14147274990f2b7f",
         },
     ),
@@ -105,7 +105,7 @@ impl SdkPaths {
         }
         #[cfg(target_arch = "aarch64")]
         {
-            arch = Some("arm");
+            arch = Some("arm64");
         }
         let arch = arch.expect("Unsupported architecture. Must be x86, x86_64 or aarch64");
         SdkPaths {
@@ -324,6 +324,11 @@ Cobalt Renderer SDK could not be found. Either
         println!("cargo:rustc-link-lib=dylib=c++");
         println!("cargo:rustc-link-lib=dylib=c++abi");
         println!("cargo:rustc-link-lib=dylib=unwind");
+    }
+    #[cfg(target_os = "macos")]
+    {
+        // Additional macOS links required
+        println!("cargo:rustc-link-lib=dylib=c++");
     }
 
     // Import the following headers for the bindings
