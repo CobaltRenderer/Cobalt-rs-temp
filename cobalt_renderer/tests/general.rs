@@ -9,15 +9,15 @@ mod common;
 
 #[repr(C)]
 struct Vertex {
-    position: cgmath::Vector3<f32>,
-    color: cgmath::Vector3<f32>,
+    position: [f32;3],
+    color: [f32;3],
 }
 
 impl Vertex {
     fn new(xyz: (f32, f32, f32), rgb: (f32, f32, f32)) -> Vertex {
         Vertex {
-            position: cgmath::Vector3::from(xyz),
-            color: cgmath::Vector3::from(rgb),
+            position: [xyz.0, xyz.1, xyz.2],
+            color: [rgb.0, rgb.1, rgb.2],
         }
     }
 }
@@ -56,13 +56,13 @@ fn general() {
     let renderer = common::setup_renderer(&[]);
     let mut capture = common::setup_frame_buffer_for_capture(&renderer);
 
-    let color = cgmath::Vector4::new(0.0f32, 0.0, 0.0, 0.0);
+    let color = [0.0f32, 0.0, 0.0, 0.0];
     let mut render_pass_node = renderer.create_render_pass_node();
     render_pass_node.bind_frame_buffer(&capture.frame_buffer);
     render_pass_node.set_attachment_clear_data(
         frame_buffers::AttachmentType::Color,
         0,
-        color.as_ref(),
+        &color,
     );
     renderer.set_render_passes(&[&render_pass_node], &[1]);
 
