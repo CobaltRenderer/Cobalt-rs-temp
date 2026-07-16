@@ -170,12 +170,40 @@ fn main() {
                 repo.checkout_tree(&obj, None).unwrap();
             }
 
-            // TODO(DTM): Determine preset based on platform
+            let mut platform:Option<&str> = None;
+            let mut arch:Option<&str> = None;
+            #[cfg(target_os = "windows")]
+            {
+                platform = Some("windows-msvc");
+            }
+            #[cfg(target_os = "macos")]
+            {
+                platform = Some("macos-clang");
+            }
+            #[cfg(target_os = "linux")]
+            {
+                platform = Some("linux-clang");
+            }
+            #[cfg(target_arch = "x86")]
+            {
+                arch = Some("x86");
+            }
+            #[cfg(target_arch = "x86_64")]
+            {
+                arch = Some("x64");
+            }
+            #[cfg(target_arch = "aarch64")]
+            {
+                arch = Some("arm64");
+            }
+            let platform = platform.expect("Unsupported platform for automatic SDK builds");
+            let arch = arch.expect("Unsupported arch for automatic SDK builds");
+            let preset = format!("{platform}-{arch}-release");
 
             let mut config_proc = std::process::Command::new("cmake")
                 .current_dir(&build_dir)
                 .arg("--preset")
-                .arg("win-msvc-x64-release")
+                .arg(&preset)
                 .arg("-DCOBALT_USE_SDL3=OFF")
                 .arg("-DCOBALT_BUILD_TESTS=OFF")
                 .arg("-DCOBALT_BUILD_EXAMPLES=OFF")
@@ -195,7 +223,7 @@ fn main() {
                 .current_dir(&build_dir)
                 .arg("--build")
                 .arg("--preset")
-                .arg("win-msvc-x64-release")
+                .arg(&preset)
                 .arg("--target")
                 .arg("install")
                 .spawn()

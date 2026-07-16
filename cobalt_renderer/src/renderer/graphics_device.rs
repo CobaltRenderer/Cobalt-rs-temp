@@ -160,20 +160,20 @@ impl WindowSystem {
             #[cfg(target_os = "linux")]
             RawDisplayHandle::Xcb(w) => {
                 let connection = w.connection.ok_or_else(|| {
-                    Err(RendererError::new_with_error(
+                    RendererError::new_with_error(
                         RendererErrorKind::UnsupportedWindow,
                         "Xcb display does not contain a required connection pointer".into(),
-                    ))
+                    )
                 })?;
                 Ok(Self::Xcb { connection })
             }
             #[cfg(target_os = "linux")]
             RawDisplayHandle::Xlib(w) => {
                 let display = w.display.ok_or_else(|| {
-                    Err(RendererError::new_with_error(
+                    RendererError::new_with_error(
                         RendererErrorKind::UnsupportedWindow,
                         "Xlib display does not contain a required display pointer".into(),
-                    ))
+                    )
                 })?;
                 Ok(Self::Xlib { display })
             }
@@ -394,7 +394,7 @@ impl<'a> GraphicsDevice<'a> {
             features.truncate(length);
             let features: Result<Vec<Feature>, num_enum::TryFromPrimitiveError<Feature>> = features
                 .into_iter()
-                .map(Feature::try_from_primitive)
+                .map(|f| Feature::try_from_primitive(f as i32))
                 .collect();
             return features.unwrap();
         }

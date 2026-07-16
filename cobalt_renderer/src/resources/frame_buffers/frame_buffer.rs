@@ -7,8 +7,9 @@ use std::num::NonZero;
 use std::ptr::NonNull;
 use std::sync::Arc;
 
+#[allow(unused)]
 #[cfg(feature = "raw_window_handle")]
-use raw_window_handle::RawWindowHandle;
+use raw_window_handle::{RawWindowHandle, RawDisplayHandle};
 
 use bitflags::bitflags;
 
@@ -117,10 +118,10 @@ impl Window {
             RawWindowHandle::Xcb(w) => {
                 if let RawDisplayHandle::Xcb(d) = display_handle {
                     let connection = d.connection.ok_or_else(|| {
-                        Err(RendererError::new_with_error(
+                        RendererError::new_with_error(
                             RendererErrorKind::UnsupportedWindow,
                             "Xcb display does not contain a required display pointer".into(),
-                        ))
+                        )
                     })?;
                     Ok(Self::Xcb {
                         connection,
@@ -138,10 +139,10 @@ impl Window {
             RawWindowHandle::Xlib(w) => {
                 if let RawDisplayHandle::Xlib(d) = display_handle {
                     let display = d.display.ok_or_else(|| {
-                        Err(RendererError::new_with_error(
+                        RendererError::new_with_error(
                             RendererErrorKind::UnsupportedWindow,
                             "Xlib display does not contain a required display pointer".into(),
-                        ))
+                        )
                     })?;
                     Ok(Self::Xlib {
                         display,
