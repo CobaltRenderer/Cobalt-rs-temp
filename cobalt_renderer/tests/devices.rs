@@ -4,18 +4,17 @@
 use cobalt_renderer::renderer::{
     DeviceEnumerationFlags, MemoryType, RendererInitializationFlags, WindowSystem,
 };
-use std::io::Write;
 mod common;
 
 #[test]
-// Load all available plugins and check all device information
 fn list_devices() {
-    common::setup();
+    // Test loading all available renderer plugins, printing information about
+    // all devices, and creating a renderer for the preferred device.
 
-    let library = cobalt_renderer::init().unwrap();
+    let library = common::setup_library();
     let mut enumerator = library.renderer_plugin_enumerator();
 
-    let mut path = std::path::PathBuf::from(cobalt_renderer_sys::DEVELOPMENT_RUNTIME_BIN_DIR);
+    let path = std::path::PathBuf::from(cobalt_renderer_sys::DEVELOPMENT_RUNTIME_BIN_DIR);
     enumerator.enumerate_plugins_in_directory(path).unwrap();
 
     for mut info in enumerator.all_plugins() {
@@ -23,7 +22,6 @@ fn list_devices() {
         println!("\tAPI     : {:?}", info.api_family());
         println!("\tVersion : {}", info.target_api_version());
         println!("\tName    : {}", info.name());
-        std::io::stdout().flush().unwrap();
 
         let enumerator = info
             .create_device_enumerator(DeviceEnumerationFlags::None)
@@ -57,7 +55,7 @@ fn list_devices() {
             RendererInitializationFlags::None,
             WindowSystem::Headless,
         ) {
-            log::error!("Failed to create renderer for device above");
+            log::error!("Failed to create renderer for device above, {e}");
         }
     }
 }

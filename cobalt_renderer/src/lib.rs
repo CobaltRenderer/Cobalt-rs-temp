@@ -73,3 +73,5 @@ pub use renderer_plugin_enumerator::*;
 pub mod render_tree;
 pub mod renderer;
 pub mod resources;
+
+pub mod prelude;
