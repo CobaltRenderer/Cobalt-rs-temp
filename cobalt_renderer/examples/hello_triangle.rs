@@ -99,7 +99,7 @@ impl winit::application::ApplicationHandler for App {
         // First we need to load a renderer plugin
         // We will search through all the plugins in the SDK and
         // select the preferred one
-        let path = std::path::PathBuf::from(cobalt_renderer::DEVELOPMENT_RUNTIME_BIN_DIR);
+        let path = std::path::PathBuf::from(cobalt_renderer::LOCAL_RUNTIME_BIN_DIR);
         let mut renderer_enumerator = library.renderer_plugin_enumerator();
         renderer_enumerator
             .enumerate_plugins_in_directory(path)

@@ -47,9 +47,17 @@ const PLUGIN_PREFERENCE: [(ApiFamily, u32); 3] = [
 const PLUGIN_PREFERENCE: [(ApiFamily, u32); 2] =
     [(ApiFamily::Vulkan, u32::MAX), (ApiFamily::OpenGl, u32::MAX)];
 
-// TODO(DTM): Should this exist?
-pub const DEVELOPMENT_RUNTIME_BIN_DIR: &str = sys::DEVELOPMENT_RUNTIME_BIN_DIR;
-
+/// Binary directory where plugins can be found during local development
+/// 
+/// # IMPORTANT
+/// 
+/// This path is the absolute path to the bin directory of the Cobalt SDK
+/// on the current machine. You should only use this variable for local builds. 
+/// For distribution your program should bundle the required shared libraries and access
+/// them at a different path.
+/// 
+/// This is provided as a convenience for development and for examples/tests
+pub const LOCAL_RUNTIME_BIN_DIR: &str = sys::LOCAL_RUNTIME_BIN_DIR;
 /// Discover renderer plugins and evaluate the preferred plugin for the current platform
 ///
 /// This enumerator keeps an internal list of plugins. You may inspect all loaded plugins

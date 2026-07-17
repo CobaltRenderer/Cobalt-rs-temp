@@ -1,6 +1,9 @@
 // Copyright (c) 2026, Maptek Pty Ltd
 // Licensed under the MIT License
 
+//! `cobalt_renderer_sys` provides C API bindings for the Cobalt Renderer. Use the `cobalt_renderer`
+//! crate for a safer Rust API.
+//! 
 //! ### Building with the SDK
 //!
 //! `cobalt_renderer_sys` relies on the Cobalt Renderer SDK for builds and runtime dynamic libraries.
@@ -31,11 +34,24 @@
 //!    [README](https://github.com/CobaltRenderer/Cobalt) for more information on building. Builds may take
 //!    several minutes in which the `cobalt_renderer_sys(build)` target may appear to stall, especially for release builds.
 //!
-//! ### Development
+//! ### Environment Variables
+//! 
+//! | Variable | Default | Purpose |
+//! |-|-|-|
+//! | `COBALT_SDK_DIR` | None | Root directory of Cobalt SDK for builds |
+//! | `COBALT_INCLUDE_DIR` | None | Include directory of Cobalt SDK for builds |
+//! | `COBALT_LIB_DIR` | None | Lib directory of Cobalt SDK for builds |
+//! | `COBALT_BIN_DIR` | None | Bin directory of Cobalt SDK for runtime during development |
+//! | `COBALT_SDK_BUILD_DIR` | `$OUT_DIR/CobaltBuild` | Directory to perform SDK builds in |
+//! | `COBALT_SDK_CACHE_DIR` | `$OUT_DIR/CobaltSDK` | Directory to store SDK downloads or build output |
+//! 
+//! ### Loading Renderer Plugins
 //!
-//!
-//!
-//! ### Deployment
+//! During development, you can use [`LOCAL_RUNTIME_BIN_DIR`] to find renderer plugins. This constant
+//! stores the Cobalt SDK binary directory which holds plugins. 
+//! 
+//! For distributions, you will need to distribute the renderer plugins and required shared libraries.
+//! You cannot use [`LOCAL_RUNTIME_BIN_DIR`] for distributed builds and should use a different path.
 
 // Bindings will have these issues which we will allow
 #![allow(non_upper_case_globals)]
@@ -44,4 +60,14 @@
 
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 
-pub const DEVELOPMENT_RUNTIME_BIN_DIR: &str = env!("RUNTIME_BIN_DIR");
+/// Binary directory where plugins can be found during local development
+/// 
+/// # IMPORTANT
+/// 
+/// This path is the absolute path to the bin directory of the Cobalt SDK
+/// on the current machine. You should only use this variable for local builds. 
+/// For distribution your program should bundle the required shared libraries and access
+/// them at a different path.
+/// 
+/// This is provided as a convenience for development and for examples/tests
+pub const LOCAL_RUNTIME_BIN_DIR: &str = env!("RUNTIME_BIN_DIR");

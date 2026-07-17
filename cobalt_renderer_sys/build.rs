@@ -162,12 +162,12 @@ fn main() {
             };
             if !build_dir.exists() {
                 let repo = git2::Repository::clone(SDK_GIT_REPO, &build_dir)
-                    .expect("Could not clone git repo for build");
+                    .expect("Could not clone Git repo for build");
                 let tag_ref = repo
                     .find_reference(&format!("refs/tags/{SDK_GIT_TAG}"))
-                    .unwrap();
-                let obj = tag_ref.peel(git2::ObjectType::Commit).unwrap();
-                repo.checkout_tree(&obj, None).unwrap();
+                    .expect("Could not find expected version tag in Git repo");
+                let obj = tag_ref.peel(git2::ObjectType::Commit).expect("Could not peel Git reference");
+                repo.checkout_tree(&obj, None).expect("Could not checkout Git repo");
             }
 
             let mut platform: Option<&str> = None;
@@ -267,7 +267,7 @@ fn main() {
             }
 
             // No SDK found, needs to be downloaded
-            let sdk_download = find_sdk_download().unwrap(); // TODO(DTM): Better error message
+            let sdk_download = find_sdk_download().expect("No SDK release could be found for the target platform. Consider using the `build_sdk` feature instead, or building and providing the SDK manually");
             download_verify_unzip_sdk(sdk_download, &cache_path);
             Some(SdkPaths::from_sdk_dir(cache_path))
         });
@@ -439,11 +439,10 @@ fn find_sdk_download() -> Option<SdkDownload> {
 
 #[cfg(feature = "download_sdk")]
 fn download_verify_unzip_sdk(sdk: SdkDownload, out_dir: &std::path::Path) {
-    // TODO(DTM): Not unzipping yet
     use sha2::Digest;
     use std::io::{Cursor, Read, Seek, Write};
 
-    let response = ureq::get(sdk.download_url).call().unwrap();
+    let response = ureq::get(sdk.download_url).call().expect("Failed to make network request for SDK");
     let status = response.status();
     if !status.is_success() {
         panic!(
@@ -453,7 +452,7 @@ fn download_verify_unzip_sdk(sdk: SdkDownload, out_dir: &std::path::Path) {
     }
     let mut reader = response.into_body().into_reader();
     let mut sdk_file: Vec<u8> = vec![];
-    reader.read_to_end(&mut sdk_file).unwrap();
+    reader.read_to_end(&mut sdk_file).expect("Could not read full response body");
 
     // Verify download is correct
     let mut hasher = sha2::Sha256::new();

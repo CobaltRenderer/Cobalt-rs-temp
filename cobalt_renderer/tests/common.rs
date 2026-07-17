@@ -26,7 +26,7 @@ pub fn setup_plugin() -> cobalt_renderer::RendererPlugin {
     let library = setup_library();
 
     let mut enumerator = library.renderer_plugin_enumerator();
-    let path = std::path::PathBuf::from(cobalt_renderer_sys::DEVELOPMENT_RUNTIME_BIN_DIR);
+    let path = std::path::PathBuf::from(cobalt_renderer_sys::LOCAL_RUNTIME_BIN_DIR);
     enumerator
         .enumerate_plugins_in_directory(path)
         .expect("Could not enumerate plugins");

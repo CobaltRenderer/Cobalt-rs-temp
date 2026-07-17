@@ -3,6 +3,58 @@
 
 // TODO(DTM): Update
 
+//! `cobalt_renderer_sys` provides C API bindings for the Cobalt Renderer. Use the `cobalt_renderer`
+//! crate for a safer Rust API.
+//! 
+//! ### Building with the SDK
+//!
+//! `cobalt_renderer_sys` relies on the Cobalt Renderer SDK for builds and runtime dynamic libraries.
+//! There are a few options to use the SDK.
+//! 1. (preferred) [Download a SDK](https://github.com/CobaltRenderer/Cobalt/releases) from GitHub
+//!    or clone and build it yourself. Then set the environment variable `COBALT_SDK_DIR` to indicate
+//!    where it is stored. For reliability and distribution, this is the best option. You can set the
+//!    environment variable in your projects `.cargo/config.toml` file. For example, if the SDK was
+//!    under the directory `CobaltSDK` at the root of the project directory.
+//!    ```toml
+//!    [env]
+//!    COBALT_SDK_PATH = { value = "CobaltSDK", relative = true }
+//!    ```
+//!    You can also individually set `COBALT_INCLUDE_DIR`, `COBALT_LIB_DIR` and `COBALT_BIN_DIR` for
+//!    the different subdirectories. All three must be set and `COBALT_SDK_DIR` will overwrite them.
+//! 2. Use the `download_sdk` feature flag to have the `build.rs` script download a matching release
+//!    for you. Downloads will by default be cached at `COBALT_SDK_CACHE_DIR`. If not set, the default
+//!    location is at `$OUT_DIR/CobaltSDK`. It is HIGHLY recommended to cache the SDK outside your `target`
+//!    directory as clean builds will remove the SDK and require them to be re-downloaded on the next build.
+//!    Builds are not available for every platform and builds for Linux may have problems.
+//!    it is cached outside the `target` directory.
+//! 3. Use the `build_sdk` feature flag to have the `build.rs` script clone and build the Cobalt
+//!    Renderer project. Builds will be done in `$OUT_DIR/CobaltBuild` and the SDK stored at `COBALT_SDK_CACHE_DIR`.
+//!    If not set, the default location is at `$OUT_DIR/CobaltSDK`. It is HIGHLY recommended to cache the SDK
+//!    outside your `target` directory as clean builds will remove the SDK and require them the repo to be re-cloned
+//!    and built again. Builds may require additional packages to be installed and on your `PATH`,
+//!    particularly `cmake`. Please see the Cobalt Renderer
+//!    [README](https://github.com/CobaltRenderer/Cobalt) for more information on building. Builds may take
+//!    several minutes in which the `cobalt_renderer_sys(build)` target may appear to stall, especially for release builds.
+//!
+//! ### Environment Variables
+//! 
+//! | Variable | Default | Purpose |
+//! |-|-|-|
+//! | `COBALT_SDK_DIR` | None | Root directory of Cobalt SDK for builds |
+//! | `COBALT_INCLUDE_DIR` | None | Include directory of Cobalt SDK for builds |
+//! | `COBALT_LIB_DIR` | None | Lib directory of Cobalt SDK for builds |
+//! | `COBALT_BIN_DIR` | None | Bin directory of Cobalt SDK for runtime during development |
+//! | `COBALT_SDK_BUILD_DIR` | `$OUT_DIR/CobaltBuild` | Directory to perform SDK builds in |
+//! | `COBALT_SDK_CACHE_DIR` | `$OUT_DIR/CobaltSDK` | Directory to store SDK downloads or build output |
+//! 
+//! ### Loading Renderer Plugins
+//!
+//! During development, you can use [`LOCAL_RUNTIME_BIN_DIR`] to find renderer plugins. This constant
+//! stores the Cobalt SDK binary directory which holds plugins. 
+//! 
+//! For distributions, you will need to distribute the renderer plugins and required shared libraries.
+//! You cannot use [`LOCAL_RUNTIME_BIN_DIR`] for distributed builds and should use a different path.
+
 //! Cross-platform graphics rendering library
 //!
 //! The Cobalt Renderer is a generic 3D graphics library, intended for use
@@ -49,10 +101,7 @@
 //! All use of renderer objects MUST be while a graphics lock is held. No object methods,
 //! or drops must occur while [`Renderer::start_new_frame`](crate::renderer::Renderer)
 //! is running. See more under [`GraphicsLock`](crate::renderer::GraphicsLock)
-//!
-//! # Future work
-//! - Holding a graphics lock automatically during all drops as they may be difficult to handle and lock against
-//! - Make some objects more 'Rusty' with builder patterns and other type protections to prevent misuse
+
 
 // Enum values in cobalt_renderer_sys are i32 on windows and u32 on linux
 // We cast them to i32 regardless of platform when setting values in this crates enums

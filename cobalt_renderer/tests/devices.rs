@@ -14,7 +14,7 @@ fn list_devices() {
     let library = common::setup_library();
     let mut enumerator = library.renderer_plugin_enumerator();
 
-    let path = std::path::PathBuf::from(cobalt_renderer_sys::DEVELOPMENT_RUNTIME_BIN_DIR);
+    let path = std::path::PathBuf::from(cobalt_renderer_sys::LOCAL_RUNTIME_BIN_DIR);
     enumerator.enumerate_plugins_in_directory(path).unwrap();
 
     for mut info in enumerator.all_plugins() {
