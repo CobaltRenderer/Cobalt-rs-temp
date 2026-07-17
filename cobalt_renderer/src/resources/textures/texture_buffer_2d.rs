@@ -94,6 +94,22 @@ impl TextureBuffer2D {
         }
     }
 
+    pub fn is_sample_count_supported(
+        &self,
+        image_format: ImageFormat,
+        data_format: DataFormat,
+        sample_count: SampleCount,
+    ) -> bool {
+        unsafe {
+            sys::Cobalt_TextureBuffer2D_IsSampleCountSupported(
+                self.handle,
+                image_format as sys::Cobalt_ImageFormat,
+                data_format as sys::Cobalt_DataFormat,
+                sample_count as sys::Cobalt_SampleCount,
+            ) != 0
+        }
+    }
+
     pub fn set_initial_data<S: Sized>(
         &mut self,
         source_buffer: &[S],

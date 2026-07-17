@@ -168,6 +168,18 @@ pub trait StateContainer: Sized {
         value.set_state_value_matrix(self, state_id, array_indices.unwrap_or_default());
     }
 
+    fn reset_state_value(&mut self, state_id: StateValueId, array_indices: Option<&[usize]>) {
+        let array_indices = array_indices.unwrap_or_default();
+        unsafe {
+            sys::Cobalt_StateContainer_ResetStateValue(
+                self.node_handle() as sys::Cobalt_StateContainer,
+                state_id.0,
+                array_indices.as_ptr(),
+                array_indices.len(),
+            );
+        }
+    }
+
     fn bind_texture_with_combined_sampler_2d(
         &mut self,
         texture_id: TextureId,

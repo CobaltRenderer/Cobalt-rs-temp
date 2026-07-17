@@ -7,6 +7,7 @@ use raw_window_handle::RawDisplayHandle;
 
 use super::GraphicsDeviceEnumerator;
 use crate::renderer::{Renderer, RendererInitializationFlags, RendererOption};
+use crate::resources::textures;
 use crate::{RendererError, RendererErrorKind, RendererResult};
 
 use cobalt_renderer_sys as sys;
@@ -59,6 +60,7 @@ pub enum DepthRange {
 #[repr(i32)]
 #[derive(TryFromPrimitive, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Vendor {
+    Apple = sys::Cobalt_Vendor_Apple as i32,
     Amd = sys::Cobalt_Vendor_AMD as i32,
     ImgTec = sys::Cobalt_Vendor_ImgTec as i32,
     Nvidia = sys::Cobalt_Vendor_Nvidia as i32,
@@ -66,6 +68,9 @@ pub enum Vendor {
     Microsoft = sys::Cobalt_Vendor_Microsoft as i32,
     Qualcomm = sys::Cobalt_Vendor_Qualcomm as i32,
     Intel = sys::Cobalt_Vendor_Intel as i32,
+    Mesa = sys::Cobalt_Vendor_Mesa as i32,
+    Vivante = sys::Cobalt_Vendor_Vivante as i32,
+    VeriSilicon = sys::Cobalt_Vendor_VeriSilicon as i32,
     Unknown = sys::Cobalt_Vendor_Unknown as i32,
 }
 
@@ -275,6 +280,31 @@ impl<'a> GraphicsDevice<'a> {
         }
     }
 
+    pub fn driver_info(&self) -> String {
+        // We don't know the size of the string.
+        // Allocate what should be enough space and if it fills up
+        // we will fetch the name again but with enough space
+        let mut capacity: usize = 128;
+        loop {
+            let mut name: Vec<u8> = vec![0; capacity];
+            let mut length = name.len();
+            unsafe {
+                sys::Cobalt_GraphicsDevice_GetDriverInfo(
+                    self.handle,
+                    name.as_mut_ptr() as *mut std::ffi::c_char,
+                    &mut length,
+                );
+            }
+            if length > name.len() {
+                capacity = length;
+                continue;
+            }
+
+            name.truncate(length);
+            return String::from_utf8_lossy(name.as_slice()).to_string();
+        }
+    }
+
     pub fn image_limits(&self) -> ImageLimits {
         let mut limits = sys::Cobalt_ImageLimits::default();
         unsafe {
@@ -397,6 +427,20 @@ impl<'a> GraphicsDevice<'a> {
                 .map(|f| Feature::try_from_primitive(f as i32))
                 .collect();
             return features.unwrap();
+        }
+    }
+
+    pub fn is_texture_format_supported(
+        &self,
+        image_format: textures::ImageFormat,
+        data_format: textures::DataFormat,
+    ) -> bool {
+        unsafe {
+            sys::Cobalt_GraphicsDevice_IsTextureFormatSupported(
+                self.handle,
+                image_format as sys::Cobalt_ImageFormat,
+                data_format as sys::Cobalt_DataFormat,
+            ) != 0
         }
     }
 

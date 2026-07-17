@@ -165,19 +165,21 @@ impl RenderableNode {
         Ok(())
     }
 
-    pub fn set_indirect_draw_counter(
+    pub fn set_indirect_draw_with_counter(
         &mut self,
         max_draw_count: usize,
         draw_count_source_data_array: &mut DataArray,
         source_data_array: &mut DataArray,
         array_offset_in_bytes: usize,
         array_stride_in_bytes: usize,
+        draw_count_array_offset_in_bytes: Option<usize>,
     ) -> RendererResult<()> {
         unsafe {
-            return_on_failure!(sys::Cobalt_RenderableNode_SetIndirectDrawCounter(
+            return_on_failure!(sys::Cobalt_RenderableNode_SetIndirectDrawCounterWithOffset(
                 self.handle,
                 max_draw_count,
                 draw_count_source_data_array.handle,
+                draw_count_array_offset_in_bytes.unwrap_or(0),
                 source_data_array.handle,
                 array_offset_in_bytes,
                 array_stride_in_bytes,

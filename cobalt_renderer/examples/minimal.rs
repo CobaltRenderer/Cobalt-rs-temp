@@ -15,7 +15,7 @@ use cobalt_renderer::resources::*;
 // HLSL shader programs for drawing our triangle, check out the file
 const SHADER: &str = include_str!("minimal.hlsl");
 // Size of texture
-const TEXTURE_SIZE:[u32;2] = [1024, 1024];
+const TEXTURE_SIZE: [u32; 2] = [1024, 1024];
 // Vertex data
 const POSITIONS: [[f32; 2]; 3] = [[-0.649, -0.375], [0.649, -0.375], [0.0, 0.75]];
 const COLORS: [[f32; 3]; 3] = [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]];
@@ -78,19 +78,21 @@ fn main() {
     // Create frame buffer to render into
     let mut frame_buffer = renderer.create_frame_buffer();
     frame_buffer.define_viewport_region(&[0, 0], &TEXTURE_SIZE);
-    frame_buffer.bind_texture(&mut texture, frame_buffers::AttachmentType::Color, 0).expect("Could not bind texture to framebuffer");
-    frame_buffer.add_output_capture_target(&mut frame_buffer_output, frame_buffers::AttachmentType::Color, 0);
+    frame_buffer
+        .bind_texture(&mut texture, frame_buffers::AttachmentType::Color, 0)
+        .expect("Could not bind texture to framebuffer");
+    frame_buffer.add_output_capture_target(
+        &mut frame_buffer_output,
+        frame_buffers::AttachmentType::Color,
+        0,
+    );
 
     // Create render pass with dark grey clear color which renders
     // to the framebuffer
-    let color:[f32;4] = [0.2, 0.2, 0.2, 1.0];
+    let color: [f32; 4] = [0.2, 0.2, 0.2, 1.0];
     let mut render_pass_node = renderer.create_render_pass_node();
     render_pass_node.bind_frame_buffer(&frame_buffer);
-    render_pass_node.set_attachment_clear_data(
-        frame_buffers::AttachmentType::Color,
-        0,
-        &color,
-    );
+    render_pass_node.set_attachment_clear_data(frame_buffers::AttachmentType::Color, 0, &color);
 
     // Create shader program to render triangle
     // Shader is specified in `hello_triangle.hlsl` and has two
@@ -167,7 +169,11 @@ fn main() {
     let mut renderable_node = renderer.create_renderable_node();
     renderable_node.set_vertex_count(3, 0, 0, 0).unwrap();
     renderable_node
-        .set_primitive_mode(cobalt_renderer::render_tree::PrimitiveMode::Triangles, false, false)
+        .set_primitive_mode(
+            cobalt_renderer::render_tree::PrimitiveMode::Triangles,
+            false,
+            false,
+        )
         .unwrap();
 
     // Bind the attributes to the renderables and the shader

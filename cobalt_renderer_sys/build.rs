@@ -170,8 +170,8 @@ fn main() {
                 repo.checkout_tree(&obj, None).unwrap();
             }
 
-            let mut platform:Option<&str> = None;
-            let mut arch:Option<&str> = None;
+            let mut platform: Option<&str> = None;
+            let mut arch: Option<&str> = None;
             #[cfg(target_os = "windows")]
             {
                 platform = Some("windows-msvc");

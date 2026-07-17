@@ -9,8 +9,8 @@ mod common;
 
 #[repr(C)]
 struct Vertex {
-    position: [f32;3],
-    color: [f32;3],
+    position: [f32; 3],
+    color: [f32; 3],
 }
 
 impl Vertex {
@@ -59,11 +59,7 @@ fn general() {
     let color = [0.0f32, 0.0, 0.0, 0.0];
     let mut render_pass_node = renderer.create_render_pass_node();
     render_pass_node.bind_frame_buffer(&capture.frame_buffer);
-    render_pass_node.set_attachment_clear_data(
-        frame_buffers::AttachmentType::Color,
-        0,
-        &color,
-    );
+    render_pass_node.set_attachment_clear_data(frame_buffers::AttachmentType::Color, 0, &color);
     renderer.set_render_passes(&[&render_pass_node], &[1]);
 
     let mut shader_program = renderer.create_shader_program();

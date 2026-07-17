@@ -205,7 +205,7 @@ impl RendererPluginEnumerator {
         }
         // None preferred, return any plugin
         log::warn!("Could not find a preferred plugin, selecting any if available");
-        if self.plugins.is_empty() {
+        if !self.plugins.is_empty() {
             Some(self.plugins.remove(0))
         } else {
             None

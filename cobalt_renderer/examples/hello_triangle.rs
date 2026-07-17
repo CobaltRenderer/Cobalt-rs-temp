@@ -160,14 +160,10 @@ impl winit::application::ApplicationHandler for App {
 
         // Create render pass with dark grey clear color which renders
         // to the framebuffer
-        let color:[f32;4] = [0.2, 0.2, 0.2, 1.0];
+        let color: [f32; 4] = [0.2, 0.2, 0.2, 1.0];
         let mut render_pass_node = renderer.create_render_pass_node();
         render_pass_node.bind_frame_buffer(&frame_buffer);
-        render_pass_node.set_attachment_clear_data(
-            frame_buffers::AttachmentType::Color,
-            0,
-            &color,
-        );
+        render_pass_node.set_attachment_clear_data(frame_buffers::AttachmentType::Color, 0, &color);
 
         // Create shader program to render triangle
         // Shader is specified in `hello_triangle.hlsl` and has two

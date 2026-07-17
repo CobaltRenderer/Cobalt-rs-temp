@@ -7,10 +7,12 @@ use crate::RendererResult;
 use crate::renderer::{Renderer, RendererInternal};
 use crate::resources::batching::TransferBatch;
 
+use num_enum::TryFromPrimitive;
+
 use cobalt_renderer_sys as sys;
 
 #[repr(i32)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(TryFromPrimitive, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum VertexAttributeType {
     Int8 = sys::Cobalt_VertexAttributeType_Int8 as i32,
     Int16 = sys::Cobalt_VertexAttributeType_Int16 as i32,
@@ -87,6 +89,47 @@ impl VertexAttribute {
 
     pub fn is_bound_to_buffer(&self) -> bool {
         unsafe { sys::Cobalt_VertexAttribute_IsBoundToBuffer(self.handle) != 0 }
+    }
+
+    pub fn vertex_count(&self) -> usize {
+        unsafe { sys::Cobalt_VertexAttribute_GetVertexCount(self.handle) }
+    }
+
+    pub fn element_count(&self) -> usize {
+        unsafe { sys::Cobalt_VertexAttribute_GetAttributeElementCount(self.handle) }
+    }
+
+    pub fn data_type(&self) -> VertexAttributeType {
+        unsafe {
+            VertexAttributeType::try_from_primitive(sys::Cobalt_VertexAttribute_GetDataType(
+                self.handle,
+            ))
+            .unwrap()
+        }
+    }
+
+    pub fn data_persistence_flags(&self) -> DataPersistenceFlags {
+        unsafe {
+            DataPersistenceFlags::from_bits_truncate(
+                sys::Cobalt_VertexAttribute_GetDataPersistenceFlags(self.handle) as u32,
+            )
+        }
+    }
+
+    pub fn performance_hint_cpu(&self) -> PerformanceHint {
+        unsafe {
+            PerformanceHint::from_bits_truncate(sys::Cobalt_VertexAttribute_GetPerformanceHintCpu(
+                self.handle,
+            ) as u32)
+        }
+    }
+
+    pub fn performance_hint_gpu(&self) -> PerformanceHint {
+        unsafe {
+            PerformanceHint::from_bits_truncate(sys::Cobalt_VertexAttribute_GetPerformanceHintGpu(
+                self.handle,
+            ) as u32)
+        }
     }
 
     pub fn set_initial_data<S: Sized>(

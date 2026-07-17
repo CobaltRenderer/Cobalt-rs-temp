@@ -9,7 +9,7 @@ use std::sync::Arc;
 
 #[allow(unused)]
 #[cfg(feature = "raw_window_handle")]
-use raw_window_handle::{RawWindowHandle, RawDisplayHandle};
+use raw_window_handle::{RawDisplayHandle, RawWindowHandle};
 
 use bitflags::bitflags;
 
@@ -62,7 +62,9 @@ pub enum Window {
         hwnd: NonZero<isize>,
     },
     #[cfg(target_os = "macos")]
-    AppKit { view: NonNull<c_void> },
+    AppKit {
+        view: NonNull<c_void>,
+    },
     #[cfg(target_os = "linux")]
     Wayland {
         display: NonNull<c_void>,
@@ -78,6 +80,7 @@ pub enum Window {
         display: NonNull<c_void>,
         window: i32,
     },
+    Headless,
 }
 
 impl Window {
@@ -280,6 +283,21 @@ impl FrameBuffer {
                     },
                     connection: connection.as_ptr(),
                     window: window as u32,
+                };
+                return_on_failure!(sys::Cobalt_FrameBuffer_BindWindow(
+                    self.handle,
+                    (&raw const window_info) as *const sys::Cobalt_WindowInfoBase,
+                    depth_stencil_mode as sys::Cobalt_WindowDepthStencilMode,
+                    color_space_mode as sys::Cobalt_WindowColorSpaceMode,
+                    binding_flags.bits() as sys::Cobalt_WindowBindingFlags,
+                ));
+            },
+            Window::Headless => unsafe {
+                let window_info = sys::Cobalt_WindowInfoHeadless {
+                    base: sys::Cobalt_WindowInfoBase {
+                        type_: sys::Cobalt_WindowType_Headless,
+                        windowSizeInPixels: *window_size,
+                    },
                 };
                 return_on_failure!(sys::Cobalt_FrameBuffer_BindWindow(
                     self.handle,

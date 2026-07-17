@@ -24,19 +24,19 @@ pub enum ImageFormat {
     DepthAndStencil = sys::Cobalt_ImageFormat_DepthAndStencil as i32,
 }
 
-impl ImageFormat {
-    pub const fn element_count_per_pixel(&self) -> usize {
-        match self {
-            Self::R | Self::X | Self::Depth | Self::DepthAndStencil => 1,
-            Self::RG | Self::XY => 2,
-            Self::RGB | Self::BGR | Self::XYZ => 3,
-            Self::RGBA | Self::BGRA | Self::XYZW => 4,
-        }
-    }
-
-    pub const fn binary_equivalent_to(&self, format: SourceImageFormat) -> bool {
-        equivalent_image_formats(format, *self)
-    }
+#[repr(i32)]
+#[derive(TryFromPrimitive, Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SourceImageFormat {
+    R = sys::Cobalt_SourceImageFormat_R as i32,
+    RG = sys::Cobalt_SourceImageFormat_RG as i32,
+    RGB = sys::Cobalt_SourceImageFormat_RGB as i32,
+    RGBA = sys::Cobalt_SourceImageFormat_RGBA as i32,
+    BGR = sys::Cobalt_SourceImageFormat_BGR as i32,
+    BGRA = sys::Cobalt_SourceImageFormat_BGRA as i32,
+    X = sys::Cobalt_SourceImageFormat_X as i32,
+    XY = sys::Cobalt_SourceImageFormat_XY as i32,
+    XYZ = sys::Cobalt_SourceImageFormat_XYZ as i32,
+    XYZW = sys::Cobalt_SourceImageFormat_XYZW as i32,
 }
 
 #[repr(i32)]
@@ -58,123 +58,16 @@ pub enum DataFormat {
     DXT3 = sys::Cobalt_DataFormat_DXT3 as i32,
     DXT5 = sys::Cobalt_DataFormat_DXT5 as i32,
     ETC2 = sys::Cobalt_DataFormat_ETC2 as i32,
+    BPTC = sys::Cobalt_DataFormat_BPTC as i32,
+    ASTC4x4 = sys::Cobalt_DataFormat_ASTC4x4 as i32,
+    ASTC5x5 = sys::Cobalt_DataFormat_ASTC5x5 as i32,
+    ASTC6x6 = sys::Cobalt_DataFormat_ASTC6x6 as i32,
+    ASTC8x8 = sys::Cobalt_DataFormat_ASTC8x8 as i32,
     DepthUNorm16 = sys::Cobalt_DataFormat_DepthUNorm16 as i32,
     DepthUNorm24 = sys::Cobalt_DataFormat_DepthUNorm24 as i32,
     DepthUNorm24StencilUInt8 = sys::Cobalt_DataFormat_DepthUNorm24StencilUInt8 as i32,
     DepthFloat32 = sys::Cobalt_DataFormat_DepthFloat32 as i32,
     DepthFloat32StencilUInt8 = sys::Cobalt_DataFormat_DepthFloat32StencilUInt8 as i32,
-}
-
-const fn equivalent_image_formats(source_format: SourceImageFormat, format: ImageFormat) -> bool {
-    match source_format {
-        SourceImageFormat::R | SourceImageFormat::X => {
-            matches!(format, ImageFormat::R | ImageFormat::X)
-        }
-        SourceImageFormat::RG | SourceImageFormat::XY => {
-            matches!(format, ImageFormat::RG | ImageFormat::XY)
-        }
-        SourceImageFormat::RGB | SourceImageFormat::XYZ => {
-            matches!(format, ImageFormat::RGB | ImageFormat::XYZ)
-        }
-        SourceImageFormat::RGBA | SourceImageFormat::XYZW => {
-            matches!(format, ImageFormat::RGBA | ImageFormat::XYZW)
-        }
-        SourceImageFormat::BGR => matches!(format, ImageFormat::BGR),
-        SourceImageFormat::BGRA => matches!(format, ImageFormat::BGRA),
-    }
-}
-
-const fn equivalent_data_formats(source_format: SourceDataFormat, format: DataFormat) -> bool {
-    match source_format {
-        SourceDataFormat::Int8 => matches!(format, DataFormat::Int8),
-        SourceDataFormat::Int16 => matches!(format, DataFormat::Int16),
-        SourceDataFormat::Int32 => matches!(format, DataFormat::Int32),
-        SourceDataFormat::UNorm8 | SourceDataFormat::UInt8 => {
-            matches!(format, DataFormat::UInt8 | DataFormat::UNorm8)
-        }
-        SourceDataFormat::UNorm16 | SourceDataFormat::UInt16 => matches!(
-            format,
-            DataFormat::UInt16 | DataFormat::UNorm16 | DataFormat::DepthUNorm16
-        ),
-        SourceDataFormat::UInt32 => matches!(format, DataFormat::UInt32),
-        SourceDataFormat::Norm8 => matches!(format, DataFormat::Norm8),
-        SourceDataFormat::Norm16 => matches!(format, DataFormat::Norm16),
-        SourceDataFormat::Float16 => matches!(format, DataFormat::Float16),
-        SourceDataFormat::Float32 => {
-            matches!(format, DataFormat::Float32 | DataFormat::DepthFloat32)
-        }
-        SourceDataFormat::DXT1 => matches!(format, DataFormat::DXT1),
-        SourceDataFormat::DXT3 => matches!(format, DataFormat::DXT3),
-        SourceDataFormat::DXT5 => matches!(format, DataFormat::DXT5),
-        SourceDataFormat::ETC2 => matches!(format, DataFormat::ETC2),
-        _ => false,
-    }
-}
-
-impl DataFormat {
-    pub const fn bytes_per_element(&self) -> usize {
-        match self {
-            Self::Int8 | Self::UInt8 | Self::Norm8 | Self::UNorm8 => 1,
-            Self::Int16 | Self::UInt16 | Self::Norm16 | Self::UNorm16 | Self::Float16 => 2,
-            Self::Int32 | Self::UInt32 | Self::Float32 => 4,
-            Self::DepthUNorm16 => 2,
-            Self::DepthUNorm24 | Self::DepthUNorm24StencilUInt8 | Self::DepthFloat32 => 4,
-            Self::DepthFloat32StencilUInt8 => 8,
-            _ => 0,
-        }
-    }
-
-    pub const fn is_compressed_format(&self) -> bool {
-        matches!(self, Self::DXT1 | Self::DXT3 | Self::DXT5 | Self::ETC2)
-    }
-
-    pub const fn cell_dimensions_in_pixels(&self) -> [u32; 2] {
-        match self {
-            Self::DXT1 | Self::DXT3 | Self::DXT5 | Self::ETC2 => [4, 4],
-            _ => [1, 1],
-        }
-    }
-
-    pub const fn cell_dimensions_in_bytes(&self) -> [u32; 2] {
-        match self {
-            Self::DXT1 | Self::DXT3 | Self::DXT5 | Self::ETC2 => [16, 16],
-            _ => [4, 4],
-        }
-    }
-
-    pub const fn binary_equivalent_to(&self, format: SourceDataFormat) -> bool {
-        equivalent_data_formats(format, *self)
-    }
-}
-
-#[repr(i32)]
-#[derive(TryFromPrimitive, Debug, Clone, Copy, PartialEq, Eq)]
-pub enum SourceImageFormat {
-    R = sys::Cobalt_SourceImageFormat_R as i32,
-    RG = sys::Cobalt_SourceImageFormat_RG as i32,
-    RGB = sys::Cobalt_SourceImageFormat_RGB as i32,
-    RGBA = sys::Cobalt_SourceImageFormat_RGBA as i32,
-    BGR = sys::Cobalt_SourceImageFormat_BGR as i32,
-    BGRA = sys::Cobalt_SourceImageFormat_BGRA as i32,
-    X = sys::Cobalt_SourceImageFormat_X as i32,
-    XY = sys::Cobalt_SourceImageFormat_XY as i32,
-    XYZ = sys::Cobalt_SourceImageFormat_XYZ as i32,
-    XYZW = sys::Cobalt_SourceImageFormat_XYZW as i32,
-}
-
-impl SourceImageFormat {
-    pub const fn element_count_per_pixel(&self) -> usize {
-        match self {
-            Self::R | Self::X => 1,
-            Self::RG | Self::XY => 2,
-            Self::RGB | Self::BGR | Self::XYZ => 3,
-            Self::RGBA | Self::BGRA | Self::XYZW => 4,
-        }
-    }
-
-    pub const fn binary_equivalent_to(&self, format: ImageFormat) -> bool {
-        equivalent_image_formats(*self, format)
-    }
 }
 
 #[repr(i32)]
@@ -198,6 +91,164 @@ pub enum SourceDataFormat {
     DXT3 = sys::Cobalt_SourceDataFormat_DXT3 as i32,
     DXT5 = sys::Cobalt_SourceDataFormat_DXT5 as i32,
     ETC2 = sys::Cobalt_SourceDataFormat_ETC2 as i32,
+    BPTC = sys::Cobalt_SourceDataFormat_BPTC as i32,
+    ASTC4x4 = sys::Cobalt_SourceDataFormat_ASTC4x4 as i32,
+    ASTC5x5 = sys::Cobalt_SourceDataFormat_ASTC5x5 as i32,
+    ASTC6x6 = sys::Cobalt_SourceDataFormat_ASTC6x6 as i32,
+    ASTC8x8 = sys::Cobalt_SourceDataFormat_ASTC8x8 as i32,
+}
+
+pub const fn equivalent_image_formats(
+    source_format: SourceImageFormat,
+    format: ImageFormat,
+) -> bool {
+    match source_format {
+        SourceImageFormat::R | SourceImageFormat::X => {
+            matches!(format, ImageFormat::R | ImageFormat::X)
+        }
+        SourceImageFormat::RG | SourceImageFormat::XY => {
+            matches!(format, ImageFormat::RG | ImageFormat::XY)
+        }
+        SourceImageFormat::RGB | SourceImageFormat::XYZ => {
+            matches!(format, ImageFormat::RGB | ImageFormat::XYZ)
+        }
+        SourceImageFormat::RGBA | SourceImageFormat::XYZW => {
+            matches!(format, ImageFormat::RGBA | ImageFormat::XYZW)
+        }
+        SourceImageFormat::BGR => matches!(format, ImageFormat::BGR),
+        SourceImageFormat::BGRA => matches!(format, ImageFormat::BGRA),
+    }
+}
+
+impl SourceImageFormat {
+    pub const fn element_count_per_pixel(&self) -> usize {
+        match self {
+            Self::R | Self::X => 1,
+            Self::RG | Self::XY => 2,
+            Self::RGB | Self::BGR | Self::XYZ => 3,
+            Self::RGBA | Self::BGRA | Self::XYZW => 4,
+        }
+    }
+}
+
+impl ImageFormat {
+    pub const fn element_count_per_pixel(&self) -> usize {
+        match self {
+            Self::R | Self::X | Self::Depth | Self::DepthAndStencil => 1,
+            Self::RG | Self::XY => 2,
+            Self::RGB | Self::BGR | Self::XYZ => 3,
+            Self::RGBA | Self::BGRA | Self::XYZW => 4,
+        }
+    }
+}
+
+pub const fn equivalent_data_formats(source_format: SourceDataFormat, format: DataFormat) -> bool {
+    match source_format {
+        SourceDataFormat::Int8 => matches!(format, DataFormat::Int8),
+        SourceDataFormat::Int16 => matches!(format, DataFormat::Int16),
+        SourceDataFormat::Int32 => matches!(format, DataFormat::Int32),
+        SourceDataFormat::UNorm8 | SourceDataFormat::UInt8 => {
+            matches!(format, DataFormat::UInt8 | DataFormat::UNorm8)
+        }
+        SourceDataFormat::UNorm16 | SourceDataFormat::UInt16 => matches!(
+            format,
+            DataFormat::UInt16 | DataFormat::UNorm16 | DataFormat::DepthUNorm16
+        ),
+        SourceDataFormat::UInt32 => matches!(format, DataFormat::UInt32),
+        SourceDataFormat::Norm8 => matches!(format, DataFormat::Norm8),
+        SourceDataFormat::Norm16 => matches!(format, DataFormat::Norm16),
+        SourceDataFormat::Float16 => matches!(format, DataFormat::Float16),
+        SourceDataFormat::Float32 => {
+            matches!(format, DataFormat::Float32 | DataFormat::DepthFloat32)
+        }
+        SourceDataFormat::DXT1 => matches!(format, DataFormat::DXT1),
+        SourceDataFormat::DXT3 => matches!(format, DataFormat::DXT3),
+        SourceDataFormat::DXT5 => matches!(format, DataFormat::DXT5),
+        SourceDataFormat::ETC2 => matches!(format, DataFormat::ETC2),
+        SourceDataFormat::BPTC => matches!(format, DataFormat::BPTC),
+        SourceDataFormat::ASTC4x4 => matches!(format, DataFormat::ASTC4x4),
+        SourceDataFormat::ASTC5x5 => matches!(format, DataFormat::ASTC5x5),
+        SourceDataFormat::ASTC6x6 => matches!(format, DataFormat::ASTC6x6),
+        SourceDataFormat::ASTC8x8 => matches!(format, DataFormat::ASTC8x8),
+        _ => false,
+    }
+}
+
+pub const fn cell_size_in_bytes_for_format(
+    image_format: ImageFormat,
+    data_format: DataFormat,
+) -> usize {
+    match data_format {
+        DataFormat::DXT1 => 8,
+        DataFormat::DXT3
+        | DataFormat::DXT5
+        | DataFormat::BPTC
+        | DataFormat::ETC2
+        | DataFormat::ASTC4x4
+        | DataFormat::ASTC5x5
+        | DataFormat::ASTC6x6
+        | DataFormat::ASTC8x8 => 16,
+        f => image_format.element_count_per_pixel() * f.bytes_per_element(),
+    }
+}
+
+pub const fn cell_size_in_bytes_for_source_format(
+    image_format: SourceImageFormat,
+    data_format: SourceDataFormat,
+) -> usize {
+    match data_format {
+        SourceDataFormat::DXT1 => 8,
+        SourceDataFormat::DXT3
+        | SourceDataFormat::DXT5
+        | SourceDataFormat::BPTC
+        | SourceDataFormat::ETC2
+        | SourceDataFormat::ASTC4x4
+        | SourceDataFormat::ASTC5x5
+        | SourceDataFormat::ASTC6x6
+        | SourceDataFormat::ASTC8x8 => 16,
+        f => image_format.element_count_per_pixel() * f.bytes_per_element(),
+    }
+}
+
+impl DataFormat {
+    pub const fn bytes_per_element(&self) -> usize {
+        match self {
+            Self::Int8 | Self::UInt8 | Self::Norm8 | Self::UNorm8 => 1,
+            Self::Int16 | Self::UInt16 | Self::Norm16 | Self::UNorm16 | Self::Float16 => 2,
+            Self::Int32 | Self::UInt32 | Self::Float32 => 4,
+            Self::DepthUNorm16 => 2,
+            Self::DepthUNorm24 | Self::DepthUNorm24StencilUInt8 | Self::DepthFloat32 => 4,
+            Self::DepthFloat32StencilUInt8 => 8,
+            _ => 0,
+        }
+    }
+
+    pub const fn is_compressed_format(&self) -> bool {
+        matches!(
+            self,
+            Self::DXT1
+                | Self::DXT3
+                | Self::DXT5
+                | Self::ETC2
+                | Self::BPTC
+                | Self::ASTC4x4
+                | Self::ASTC5x5
+                | Self::ASTC6x6
+                | Self::ASTC8x8
+        )
+    }
+
+    pub const fn cell_dimensions_in_pixels(&self) -> [u32; 2] {
+        match self {
+            Self::DXT1 | Self::DXT3 | Self::DXT5 | Self::ETC2 | Self::BPTC | Self::ASTC4x4 => {
+                [4, 4]
+            }
+            Self::ASTC5x5 => [5, 5],
+            Self::ASTC6x6 => [6, 6],
+            Self::ASTC8x8 => [8, 8],
+            _ => [1, 1],
+        }
+    }
 }
 
 impl SourceDataFormat {
@@ -211,12 +262,28 @@ impl SourceDataFormat {
     }
 
     pub const fn is_compressed_format(&self) -> bool {
-        matches!(self, Self::DXT1 | Self::DXT3 | Self::DXT5 | Self::ETC2)
+        matches!(
+            self,
+            Self::DXT1
+                | Self::DXT3
+                | Self::DXT5
+                | Self::ETC2
+                | Self::BPTC
+                | Self::ASTC4x4
+                | Self::ASTC5x5
+                | Self::ASTC6x6
+                | Self::ASTC8x8
+        )
     }
 
     pub const fn cell_dimensions_in_pixels(&self) -> [u32; 2] {
         match self {
-            Self::DXT1 | Self::DXT3 | Self::DXT5 | Self::ETC2 => [4, 4],
+            Self::DXT1 | Self::DXT3 | Self::DXT5 | Self::ETC2 | Self::BPTC | Self::ASTC4x4 => {
+                [4, 4]
+            }
+            Self::ASTC5x5 => [5, 5],
+            Self::ASTC6x6 => [6, 6],
+            Self::ASTC8x8 => [8, 8],
             _ => [1, 1],
         }
     }
@@ -226,10 +293,6 @@ impl SourceDataFormat {
             Self::DXT1 | Self::DXT3 | Self::DXT5 | Self::ETC2 => [16, 16],
             _ => [4, 4],
         }
-    }
-
-    pub const fn binary_equivalent_to(&self, format: DataFormat) -> bool {
-        equivalent_data_formats(*self, format)
     }
 }
 

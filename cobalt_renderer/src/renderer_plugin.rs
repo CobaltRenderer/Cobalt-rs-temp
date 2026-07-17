@@ -64,7 +64,6 @@ impl PartialOrd for ApiVersion {
 /// for creating a [`GraphicsDeviceEnumerator`]
 pub struct RendererPlugin {
     pub(crate) internal: Arc<RendererPluginInternal>,
-    pub(crate) handle: sys::Cobalt_RendererPlugin,
 }
 
 /// Actual plugin handle, shared between many objects via `Arc<T>`
@@ -72,6 +71,7 @@ pub struct RendererPlugin {
 ///
 /// Holds onto the module handle for the loaded DLL/SO
 pub(crate) struct RendererPluginInternal {
+    pub(crate) handle: sys::Cobalt_RendererPlugin,
     #[cfg(target_family = "windows")]
     _module: Arc<libloading::os::windows::Library>,
     #[cfg(target_family = "unix")]
@@ -87,8 +87,8 @@ impl RendererPlugin {
         library: Arc<LibraryInternal>,
     ) -> Self {
         RendererPlugin {
-            handle,
             internal: Arc::new(RendererPluginInternal {
+                handle,
                 _module: module,
                 _library: library,
             }),
@@ -102,8 +102,8 @@ impl RendererPlugin {
         library: Arc<LibraryInternal>,
     ) -> Self {
         RendererPlugin {
-            handle,
             internal: Arc::new(RendererPluginInternal {
+                handle,
                 _module: module,
                 _library: library,
             }),
@@ -111,14 +111,14 @@ impl RendererPlugin {
     }
 
     pub fn api_family(&self) -> ApiFamily {
-        let value = unsafe { sys::Cobalt_RendererPlugin_GetApiFamily(self.handle) };
+        let value = unsafe { sys::Cobalt_RendererPlugin_GetApiFamily(self.internal.handle) };
         ApiFamily::try_from_primitive(value as i32).unwrap()
     }
 
     pub fn target_api_version(&self) -> ApiVersion {
         let mut version = sys::Cobalt_Version::default();
         unsafe {
-            sys::Cobalt_RendererPlugin_GetTargetApiVersion(self.handle, &mut version);
+            sys::Cobalt_RendererPlugin_GetTargetApiVersion(self.internal.handle, &mut version);
         }
         ApiVersion {
             major: version.major,
@@ -138,7 +138,7 @@ impl RendererPlugin {
             unsafe {
                 // c_char will be either i8 or u8, so safe to treat u8 as c_char
                 sys::Cobalt_RendererPlugin_GetName(
-                    self.handle,
+                    self.internal.handle,
                     name.as_mut_ptr() as *mut std::ffi::c_char,
                     &mut length,
                 );
@@ -165,7 +165,7 @@ impl RendererPlugin {
             unsafe {
                 // c_char will be either i8 or u8, so safe to treat u8 as c_char
                 sys::Cobalt_RendererPlugin_GetDisplayName(
-                    self.handle,
+                    self.internal.handle,
                     name.as_mut_ptr() as *mut std::ffi::c_char,
                     &mut length,
                 );
@@ -186,7 +186,10 @@ impl RendererPlugin {
     ) -> RendererResult<GraphicsDeviceEnumerator> {
         let mut enumerator = std::ptr::null_mut();
         unsafe {
-            sys::Cobalt_RendererPlugin_CreateGraphicsDeviceEnumerator(self.handle, &mut enumerator);
+            sys::Cobalt_RendererPlugin_CreateGraphicsDeviceEnumerator(
+                self.internal.handle,
+                &mut enumerator,
+            );
         }
         GraphicsDeviceEnumerator::new_and_enumerate_devices(
             enumerator,
@@ -199,8 +202,11 @@ impl RendererPlugin {
 impl Drop for RendererPluginInternal {
     fn drop(&mut self) {
         log::debug!("Unloading renderer plugin");
+        unsafe {
+            sys::Cobalt_RendererPlugin_Delete(self.handle);
+        }
     }
 }
 
-unsafe impl Send for RendererPlugin {}
-unsafe impl Sync for RendererPlugin {}
+unsafe impl Send for RendererPluginInternal {}
+unsafe impl Sync for RendererPluginInternal {}

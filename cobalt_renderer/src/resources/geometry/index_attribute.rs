@@ -7,10 +7,12 @@ use crate::RendererResult;
 use crate::renderer::{Renderer, RendererInternal};
 use crate::resources::batching::TransferBatch;
 
+use num_enum::TryFromPrimitive;
+
 use cobalt_renderer_sys as sys;
 
 #[repr(i32)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(TryFromPrimitive, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum IndexAttributeType {
     UInt16 = sys::Cobalt_IndexAttributeType_UInt16 as i32,
     UInt32 = sys::Cobalt_IndexAttributeType_UInt32 as i32,
@@ -58,6 +60,43 @@ impl IndexAttribute {
 
     pub fn is_bound_to_buffer(&self) -> bool {
         unsafe { sys::Cobalt_IndexAttribute_IsBoundToBuffer(self.handle) != 0 }
+    }
+
+    pub fn index_count(&self) -> usize {
+        unsafe { sys::Cobalt_IndexAttribute_GetIndexCount(self.handle) }
+    }
+
+    pub fn data_type(&self) -> IndexAttributeType {
+        unsafe {
+            IndexAttributeType::try_from_primitive(sys::Cobalt_IndexAttribute_GetDataType(
+                self.handle,
+            ))
+            .unwrap()
+        }
+    }
+
+    pub fn data_persistence_flags(&self) -> DataPersistenceFlags {
+        unsafe {
+            DataPersistenceFlags::from_bits_truncate(
+                sys::Cobalt_IndexAttribute_GetDataPersistenceFlags(self.handle) as u32,
+            )
+        }
+    }
+
+    pub fn performance_hint_cpu(&self) -> PerformanceHint {
+        unsafe {
+            PerformanceHint::from_bits_truncate(sys::Cobalt_IndexAttribute_GetPerformanceHintCpu(
+                self.handle,
+            ) as u32)
+        }
+    }
+
+    pub fn performance_hint_gpu(&self) -> PerformanceHint {
+        unsafe {
+            PerformanceHint::from_bits_truncate(sys::Cobalt_IndexAttribute_GetPerformanceHintGpu(
+                self.handle,
+            ) as u32)
+        }
     }
 
     pub fn set_initial_data<S: Sized>(
