@@ -47,12 +47,13 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v7
 
-      - name: Install LLVM/Mesa components        
+      - name: Install Required Components        
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential llvm libc++-dev libc++abi-dev
+          sudo apt-get install -y build-essential llvm libc++-dev libc++abi-dev libunwind-dev
           sudo apt install -y mesa-utils mesa-common-dev libgl1-mesa-dev libglu1-mesa-dev
+          sudo apt install vulkan-tools libvulkan1 mesa-vulkan-drivers
 
       - name: Install Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
