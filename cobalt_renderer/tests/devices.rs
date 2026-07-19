@@ -49,12 +49,14 @@ fn list_devices() {
         }
 
         if let Some(mut device) = enumerator.preferred_device() {
-            device.create_renderer(
-                &[],
-                &[],
-                RendererInitializationFlags::None,
-                WindowSystem::Headless,
-            ).expect("Failed to create renderer for preferred device");
+            device
+                .create_renderer(
+                    &[],
+                    &[],
+                    RendererInitializationFlags::None,
+                    WindowSystem::Headless,
+                )
+                .expect("Failed to create renderer for preferred device");
         } else {
             println!("No devices for plugin");
         }
