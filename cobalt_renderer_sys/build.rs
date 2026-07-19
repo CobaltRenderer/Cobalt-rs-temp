@@ -28,14 +28,14 @@ const SDK_DOWNLOADS: [(&str, SdkDownload); 4] = [
         "ubuntu-gcc-arm64",
         SdkDownload {
             download_url: "https://github.com/CobaltRenderer/Cobalt/releases/download/v2.0.0/CobaltRenderer-SDK-ubuntu-gcc-arm64-v2.0.0.zip",
-            hash: "fe9283ab7f76252a66d9d39eabcb090d8861a4fbde62efc59bb4d09829172c64",
+            hash: "edbdf33c0c643cd0471d6e223c706db7971a5cf61a93a43f07a26643df8cfa7f",
         },
     ),
     (
         "ubuntu-gcc-x64",
         SdkDownload {
             download_url: "https://github.com/CobaltRenderer/Cobalt/releases/download/v2.0.0/CobaltRenderer-SDK-ubuntu-gcc-x64-v2.0.0.zip",
-            hash: "488dfc120f3ff28ac1ec3ffa46dd845e6c06c21a8a603dac70e7d43b3cc4c5c8",
+            hash: "5a3094d37bd6924f0e84aecdf9f81356c5c72cec3f0862f28e249592e207fb32",
         },
     ),
     (
