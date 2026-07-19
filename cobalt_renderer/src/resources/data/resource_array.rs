@@ -24,7 +24,7 @@ bitflags! {
     pub struct PersistenceFlags : u32 {
         const PersistAlways = sys::Cobalt_ResourceArrayDataPersistenceFlags_PersistAlways as u32;
         const InvalidateExistingDataOnWrite = sys::Cobalt_ResourceArrayDataPersistenceFlags_InvalidateExistingDataOnWrite as u32;
-        const InvalidateExistingDataAfterDrawComplete = sys::Cobalt_ResourceArrayDataPersistenceFlags_InvalidateExistingDataOnWrite as u32;
+        const InvalidateExistingDataAfterDrawComplete = sys::Cobalt_ResourceArrayDataPersistenceFlags_InvalidateExistingDataAfterDrawComplete as u32;
     }
 }
 

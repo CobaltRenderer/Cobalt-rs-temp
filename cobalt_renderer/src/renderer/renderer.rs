@@ -418,6 +418,12 @@ impl Renderer {
     }
 
     pub fn set_render_passes(&self, child_nodes: &[&RenderPassNode], sort_order: &[i32]) {
+        if child_nodes.len() != sort_order.len() {
+            log::error!(
+                "Could not set render passes, sort_order.len() does not match child_nodes.len()"
+            );
+            return;
+        }
         let mut handles: Vec<sys::Cobalt_RenderPassNode> =
             child_nodes.iter().map(|x| x.handle).collect();
         unsafe {

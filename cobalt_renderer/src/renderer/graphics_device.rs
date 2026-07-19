@@ -461,18 +461,18 @@ impl<'a> GraphicsDevice<'a> {
                 enabled_options.len(),
                 &mut renderer,
             ));
-            match window_system {
+            let result = match window_system {
                 WindowSystem::Headless => {
                     let info = sys::Cobalt_WindowSystemInfoHeadless {
                         base: sys::Cobalt_WindowSystemInfoBase {
                             type_: sys::Cobalt_WindowSystemType_Headless,
                         },
                     };
-                    return_on_failure!(sys::Cobalt_Renderer_Initialize(
+                    sys::Cobalt_Renderer_Initialize(
                         renderer,
                         (&raw const info) as *const sys::Cobalt_WindowSystemInfoBase,
-                        init_flags.bits() as sys::Cobalt_RendererInitializationFlags
-                    ))
+                        init_flags.bits() as sys::Cobalt_RendererInitializationFlags,
+                    )
                 }
                 #[cfg(target_os = "windows")]
                 WindowSystem::Windows => {
@@ -481,11 +481,11 @@ impl<'a> GraphicsDevice<'a> {
                             type_: sys::Cobalt_WindowSystemType_Win32,
                         },
                     };
-                    return_on_failure!(sys::Cobalt_Renderer_Initialize(
+                    sys::Cobalt_Renderer_Initialize(
                         renderer,
                         (&raw const info) as *const sys::Cobalt_WindowSystemInfoBase,
-                        init_flags.bits() as sys::Cobalt_RendererInitializationFlags
-                    ))
+                        init_flags.bits() as sys::Cobalt_RendererInitializationFlags,
+                    )
                 }
                 #[cfg(target_os = "macos")]
                 WindowSystem::AppKit => {
@@ -494,11 +494,11 @@ impl<'a> GraphicsDevice<'a> {
                             type_: sys::Cobalt_WindowSystemType_AppKit,
                         },
                     };
-                    return_on_failure!(sys::Cobalt_Renderer_Initialize(
+                    sys::Cobalt_Renderer_Initialize(
                         renderer,
                         (&raw const info) as *const sys::Cobalt_WindowSystemInfoBase,
-                        init_flags.bits() as sys::Cobalt_RendererInitializationFlags
-                    ))
+                        init_flags.bits() as sys::Cobalt_RendererInitializationFlags,
+                    )
                 }
                 #[cfg(target_os = "linux")]
                 WindowSystem::Wayland { display } => {
@@ -508,11 +508,11 @@ impl<'a> GraphicsDevice<'a> {
                         },
                         display: display.as_ptr(),
                     };
-                    return_on_failure!(sys::Cobalt_Renderer_Initialize(
+                    sys::Cobalt_Renderer_Initialize(
                         renderer,
                         (&raw const info) as *const sys::Cobalt_WindowSystemInfoBase,
-                        init_flags.bits() as sys::Cobalt_RendererInitializationFlags
-                    ))
+                        init_flags.bits() as sys::Cobalt_RendererInitializationFlags,
+                    )
                 }
                 #[cfg(target_os = "linux")]
                 WindowSystem::Xcb { connection } => {
@@ -522,11 +522,11 @@ impl<'a> GraphicsDevice<'a> {
                         },
                         connection: connection.as_ptr(),
                     };
-                    return_on_failure!(sys::Cobalt_Renderer_Initialize(
+                    sys::Cobalt_Renderer_Initialize(
                         renderer,
                         (&raw const info) as *const sys::Cobalt_WindowSystemInfoBase,
-                        init_flags.bits() as sys::Cobalt_RendererInitializationFlags
-                    ))
+                        init_flags.bits() as sys::Cobalt_RendererInitializationFlags,
+                    )
                 }
                 #[cfg(target_os = "linux")]
                 WindowSystem::Xlib { display } => {
@@ -536,12 +536,16 @@ impl<'a> GraphicsDevice<'a> {
                         },
                         display: display.as_ptr(),
                     };
-                    return_on_failure!(sys::Cobalt_Renderer_Initialize(
+                    sys::Cobalt_Renderer_Initialize(
                         renderer,
                         (&raw const info) as *const sys::Cobalt_WindowSystemInfoBase,
-                        init_flags.bits() as sys::Cobalt_RendererInitializationFlags
-                    ))
+                        init_flags.bits() as sys::Cobalt_RendererInitializationFlags,
+                    )
                 }
+            };
+            if result != sys::COBALT_SUCCESS {
+                sys::Cobalt_Renderer_Delete(renderer);
+                return Err(RendererError::new(RendererErrorKind::RendererError));
             }
         }
 

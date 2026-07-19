@@ -31,7 +31,10 @@ impl IndexBuffer {
         Ok(())
     }
 
-    pub fn allocate_memory_with_alias(&mut self, texel_array: TexelArray) -> RendererResult<()> {
+    pub fn allocate_memory_with_alias(
+        &mut self,
+        texel_array: &mut TexelArray,
+    ) -> RendererResult<()> {
         unsafe {
             return_on_failure!(sys::Cobalt_IndexBuffer_AllocateMemoryWithAlias(
                 self.handle,
@@ -83,15 +86,19 @@ impl IndexBuffer {
         &mut self,
         data: &[T],
         buffer_offset_in_bytes: usize,
-        transfer_batch: &TransferBatch,
+        transfer_batch: Option<&TransferBatch>,
     ) -> RendererResult<()> {
+        let batch = match transfer_batch {
+            None => std::ptr::null_mut(),
+            Some(b) => b.handle,
+        };
         unsafe {
             return_on_failure!(sys::Cobalt_IndexBuffer_QueueRawDataUpdate(
                 self.handle,
                 data.as_ptr() as *const u8,
                 std::mem::size_of_val(data),
                 buffer_offset_in_bytes,
-                transfer_batch.handle,
+                batch,
             ))
         }
         Ok(())

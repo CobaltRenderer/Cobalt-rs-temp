@@ -49,7 +49,7 @@
 //!    under the directory `CobaltSDK` at the root of the project directory.
 //!    ```toml
 //!    [env]
-//!    COBALT_SDK_PATH = { value = "CobaltSDK", relative = true }
+//!    COBALT_SDK_DIR = { value = "CobaltSDK", relative = true }
 //!    ```
 //!    You can also individually set `COBALT_INCLUDE_DIR`, `COBALT_LIB_DIR` and `COBALT_BIN_DIR` for
 //!    the different subdirectories. All three must be set. `COBALT_SDK_DIR` will overwrite them.

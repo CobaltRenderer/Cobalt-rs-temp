@@ -256,8 +256,12 @@ impl TexelArray {
         image_format: SourceImageFormat,
         data_format: SourceDataFormat,
         target_buffer_offset: usize,
-        transfer_batch: TransferBatch,
+        transfer_batch: Option<&TransferBatch>,
     ) -> RendererResult<()> {
+        let batch = match transfer_batch {
+            None => std::ptr::null_mut(),
+            Some(b) => b.handle,
+        };
         unsafe {
             return_on_failure!(sys::Cobalt_TexelArray_QueueDataUpdate(
                 self.handle,
@@ -266,7 +270,7 @@ impl TexelArray {
                 image_format as sys::Cobalt_TexelArraySourceImageFormat,
                 data_format as sys::Cobalt_TexelArraySourceDataFormat,
                 target_buffer_offset,
-                transfer_batch.handle,
+                batch,
             ))
         }
         Ok(())
@@ -278,8 +282,12 @@ impl TexelArray {
         transfer_count: usize,
         source_buffer_offset: usize,
         target_buffer_offset: usize,
-        transfer_batch: TransferBatch,
+        transfer_batch: Option<&TransferBatch>,
     ) -> RendererResult<()> {
+        let batch = match transfer_batch {
+            None => std::ptr::null_mut(),
+            Some(b) => b.handle,
+        };
         unsafe {
             return_on_failure!(sys::Cobalt_TexelArray_QueueDataTransfer(
                 self.handle,
@@ -287,7 +295,7 @@ impl TexelArray {
                 transfer_count,
                 source_buffer_offset,
                 target_buffer_offset,
-                transfer_batch.handle,
+                batch,
             ))
         }
         Ok(())
