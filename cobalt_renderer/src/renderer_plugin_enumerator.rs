@@ -95,7 +95,9 @@ impl RendererPluginEnumerator {
         }
 
         for p in found_plugins {
-            self.add_plugin_by_path(p)?;
+            if let Err(e) = self.add_plugin_by_path(&p) {
+                log::error!("Failed to load plugin at path {}, {e:?}", p.display());
+            };
         }
 
         Ok(())
