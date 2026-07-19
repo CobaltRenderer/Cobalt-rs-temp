@@ -51,7 +51,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libc++-dev libc++abi-dev
+          sudo apt-get install -y llvm libc++-dev libc++abi-dev
           sudo apt install -y mesa-utils mesa-common-dev libgl1-mesa-dev libglu1-mesa-dev
 
       - name: Install Rust
