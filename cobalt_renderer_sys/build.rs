@@ -25,16 +25,16 @@ const SDK_DOWNLOADS: [(&str, SdkDownload); 4] = [
         },
     ),
     (
-        "ubuntu-clang-arm64",
+        "ubuntu-gcc-arm64",
         SdkDownload {
-            download_url: "https://github.com/CobaltRenderer/Cobalt/releases/download/v2.0.0/CobaltRenderer-SDK-ubuntu-clang-arm64-v2.0.0.zip",
+            download_url: "https://github.com/CobaltRenderer/Cobalt/releases/download/v2.0.0/CobaltRenderer-SDK-ubuntu-gcc-arm64-v2.0.0.zip",
             hash: "fe9283ab7f76252a66d9d39eabcb090d8861a4fbde62efc59bb4d09829172c64",
         },
     ),
     (
-        "ubuntu-clang-x64",
+        "ubuntu-gcc-x64",
         SdkDownload {
-            download_url: "https://github.com/CobaltRenderer/Cobalt/releases/download/v2.0.0/CobaltRenderer-SDK-ubuntu-clang-x64-v2.0.0.zip",
+            download_url: "https://github.com/CobaltRenderer/Cobalt/releases/download/v2.0.0/CobaltRenderer-SDK-ubuntu-gcc-x64-v2.0.0.zip",
             hash: "488dfc120f3ff28ac1ec3ffa46dd845e6c06c21a8a603dac70e7d43b3cc4c5c8",
         },
     ),
@@ -185,7 +185,7 @@ fn main() {
             }
             #[cfg(target_os = "linux")]
             {
-                platform = Some("linux-clang");
+                platform = Some("linux-gcc");
             }
             #[cfg(target_arch = "x86")]
             {
@@ -324,9 +324,7 @@ See crate docs for more information.
     #[cfg(target_os = "linux")]
     {
         // Additional linux links required
-        println!("cargo:rustc-link-lib=dylib=c++");
-        println!("cargo:rustc-link-lib=dylib=c++abi");
-        println!("cargo:rustc-link-lib=dylib=unwind");
+        println!("cargo:rustc-link-lib=dylib=stdc++");
     }
     #[cfg(target_os = "macos")]
     {
@@ -413,7 +411,7 @@ fn find_sdk_download() -> Option<SdkDownload> {
     #[cfg(target_os = "linux")]
     {
         platform = Some("ubuntu");
-        toolchain = Some("clang");
+        toolchain = Some("gcc");
     }
 
     #[cfg(target_arch = "x86")]
