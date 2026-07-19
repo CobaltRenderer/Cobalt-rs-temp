@@ -2,25 +2,25 @@
 // Licensed under the MIT License
 
 //! The Cobalt Renderer is a generic, cross platform graphics library.
-//! Cobalt aims to make using modern 3D graphics hardware simple. 
-//! It does this by giving you a clean API to express what you want to draw (or compute), 
+//! Cobalt aims to make using modern 3D graphics hardware simple.
+//! It does this by giving you a clean API to express what you want to draw (or compute),
 //! without getting bogged down in how to do that. Cobalt is designed to be an accessible,
-//! lightweight alternative to directly using low-level graphics APIs such as Vulkan, 
+//! lightweight alternative to directly using low-level graphics APIs such as Vulkan,
 //! Direct3D and OpenGL.
-//! 
-//! For more information on the Cobalt Renderer, check out the main 
-//! [Github](https://github.com/CobaltRenderer/Cobalt) page. 
-//! 
+//!
+//! For more information on the Cobalt Renderer, check out the main
+//! [Github](https://github.com/CobaltRenderer/Cobalt) page.
+//!
 //! Please see the C++ documentation included in the SDK distribution,
 //! or the latest [online documentation](https://cobaltrenderer.github.io/Cobalt/?page=cobalt.graphics.Welcome)
 //! for detailed information. Although for C++, types and methods map very closely to those in this crate.
 //!
 //! # Safety
-//! 
+//!
 //! While Rust provides some safety guarantees, there are a few requirements that Rust will
 //! not enforce that YOU must be aware of when using this library. `unsafe` is used to
 //! indicate these areas.
-//! 
+//!
 //! [`Renderer::start_new_frame`](crate::renderer::Renderer) kicks off the rendering process
 //! on another thread. For the duration of the call, **no other library calls can be made**.
 //! Your program must enforce this, either implicitly in it's threading structure, or explicitly
@@ -28,13 +28,13 @@
 //! can be obtained from a renderer at any point. `GraphicsLock`s all share the same lock
 //! and can be used to protect against starting a frame. You are welcome to use your own
 //! locking mechanism as well.
-//! 
-//! We also don't protect against bound resources being dropped while in use by other 
-//! objects. For example, dropping the `ShaderProgram` bound to a `ProgramNode`. 
-//! 
+//!
+//! We also don't protect against bound resources being dropped while in use by other
+//! objects. For example, dropping the `ShaderProgram` bound to a `ProgramNode`.
+//!
 //! This crate does protect the core library objects (`Library`, `RendererPlugin` and `Renderer`)
 //! staying alive for the lifetime of all other objects and being dropped in the appropriate order.
-//! 
+//!
 //! The Cobalt Renderer does not raise C++ exceptions to report errors. An exception can be considered
 //! equivalent to a Rust panic. Exceptions are not caught and may cause undefined behavior.
 //!
