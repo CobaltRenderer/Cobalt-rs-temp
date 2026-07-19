@@ -5,6 +5,7 @@
 name = "cobalt_renderer_sys"
 version = "2.0.0"
 edition = "2024"
+rust-version = "1.88.0"
 description = "FFI bindings for the Cobalt Renderer"
 repository = "https://github.com/CobaltRenderer/Cobalt-rs"
 keywords = ["cobalt", "renderer", "graphics", "cross-platform", "gpu"]

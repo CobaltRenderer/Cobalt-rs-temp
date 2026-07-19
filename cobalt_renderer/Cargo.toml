@@ -4,6 +4,7 @@
 [package]
 name = "cobalt_renderer"
 version = "0.1.0"
+rust-version = "1.88.0"
 edition = "2024"
 description = "Cross-platform graphics library, making 3D graphics hardware simpler to use"
 repository = "https://github.com/CobaltRenderer/Cobalt-rs"
