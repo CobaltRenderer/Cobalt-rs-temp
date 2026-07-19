@@ -5,9 +5,11 @@
 name = "cobalt_renderer"
 version = "0.1.0"
 edition = "2024"
-description = "TODO"
+description = "Cross-platform graphics library, making 3D graphics hardware simpler to use"
 repository = "https://github.com/CobaltRenderer/Cobalt-rs"
-keywords = ["graphics"]
+keywords = ["cobalt", "renderer", "graphics", "cross-platform", "gpu"]
+categories = ["api-bindings", "graphics", "rendering", "rendering::graphics-api"]
+readme = "../README.md"
 license = "MIT"
 
 [features]
@@ -17,7 +19,7 @@ build_sdk = ["cobalt_renderer_sys/build_sdk"]
 raw_window_handle = ["dep:raw-window-handle"]
 
 [dependencies]
-cobalt_renderer_sys = { path="../cobalt_renderer_sys" }
+cobalt_renderer_sys = { version = "2.0.0", path="../cobalt_renderer_sys" }
 bitflags = "2.4.1"
 parking_lot = "0.12.1"
 log = "0.4"

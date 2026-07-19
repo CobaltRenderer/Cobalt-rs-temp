@@ -70,7 +70,7 @@ impl IndexAttribute {
         unsafe {
             IndexAttributeType::try_from_primitive(sys::Cobalt_IndexAttribute_GetDataType(
                 self.handle,
-            ))
+            ) as i32)
             .unwrap()
         }
     }

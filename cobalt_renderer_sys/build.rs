@@ -166,8 +166,11 @@ fn main() {
                 let tag_ref = repo
                     .find_reference(&format!("refs/tags/{SDK_GIT_TAG}"))
                     .expect("Could not find expected version tag in Git repo");
-                let obj = tag_ref.peel(git2::ObjectType::Commit).expect("Could not peel Git reference");
-                repo.checkout_tree(&obj, None).expect("Could not checkout Git repo");
+                let obj = tag_ref
+                    .peel(git2::ObjectType::Commit)
+                    .expect("Could not peel Git reference");
+                repo.checkout_tree(&obj, None)
+                    .expect("Could not checkout Git repo");
             }
 
             let mut platform: Option<&str> = None;
@@ -278,10 +281,10 @@ fn main() {
             panic!("
 Cobalt Renderer SDK could not be found. Either
 1. Download the Cobalt Renderer SDK and set environment variable '{}' to the SDK directory.
-   This can be done by setting the environment variable in .cargo/Config.toml in your project directory.
-   See https://doc.rust-lang.org/cargo/reference/config.html#configuration-format for more details
-2. Enable feature 'download_sdk' on this crate. This will download the appropriate SDK and store it
-   in the target directory.", SDK_PATH_VAR);
+2. Enable feature 'download_sdk' on this crate. This will download the appropriate SDK and store it in the target directory.
+3. Enable feature 'build_sdk' on this crate. This will clone and build the SDK from source and store it in the target directory.
+See crate docs for more information.
+   ", SDK_PATH_VAR);
         }
         Some(s) => s,
     };
@@ -356,7 +359,7 @@ Cobalt Renderer SDK could not be found. Either
 
     // Provide SDK binary directory for dependencies
     println!(
-        "cargo::rustc-env=RUNTIME_BIN_DIR={}",
+        "cargo::rustc-env=COBALT_RUNTIME_BIN_DIR={}",
         sdk_paths.bin.display()
     );
 
@@ -442,7 +445,9 @@ fn download_verify_unzip_sdk(sdk: SdkDownload, out_dir: &std::path::Path) {
     use sha2::Digest;
     use std::io::{Cursor, Read, Seek, Write};
 
-    let response = ureq::get(sdk.download_url).call().expect("Failed to make network request for SDK");
+    let response = ureq::get(sdk.download_url)
+        .call()
+        .expect("Failed to make network request for SDK");
     let status = response.status();
     if !status.is_success() {
         panic!(
@@ -452,7 +457,9 @@ fn download_verify_unzip_sdk(sdk: SdkDownload, out_dir: &std::path::Path) {
     }
     let mut reader = response.into_body().into_reader();
     let mut sdk_file: Vec<u8> = vec![];
-    reader.read_to_end(&mut sdk_file).expect("Could not read full response body");
+    reader
+        .read_to_end(&mut sdk_file)
+        .expect("Could not read full response body");
 
     // Verify download is correct
     let mut hasher = sha2::Sha256::new();

@@ -103,7 +103,7 @@ impl VertexAttribute {
         unsafe {
             VertexAttributeType::try_from_primitive(sys::Cobalt_VertexAttribute_GetDataType(
                 self.handle,
-            ))
+            ) as i32)
             .unwrap()
         }
     }

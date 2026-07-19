@@ -1,8 +1,6 @@
 // Copyright (c) 2026, Maptek Pty Ltd
 // Licensed under the MIT License
 
-//! Core renderer objects
-
 mod graphics_device;
 mod graphics_device_enumerator;
 // This warning isn't relevant as we are re-exporting to a path
