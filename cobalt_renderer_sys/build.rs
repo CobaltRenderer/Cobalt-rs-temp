@@ -469,7 +469,7 @@ fn download_verify_unzip_sdk(sdk: SdkDownload, out_dir: &std::path::Path) {
     if actual_hash != sdk.hash {
         panic!(
             "Downloaded SDK has SHA256 hash of '{}', which does not match expected hash of '{}'",
-            &actual_hash, sdk.hash
+            actual_hash, sdk.hash
         );
     }
 
