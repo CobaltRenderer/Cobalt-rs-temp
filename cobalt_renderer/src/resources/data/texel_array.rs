@@ -4,8 +4,8 @@ use bitflags::bitflags;
 use num_enum::TryFromPrimitive;
 use std::sync::Arc;
 
-use super::ResourceArray;
 use super::TexelArrayOutput;
+use super::{PerformanceHint, PersistenceFlags};
 use crate::RendererResult;
 use crate::renderer::RendererInternal;
 use crate::resources::batching::TransferBatch;
@@ -186,6 +186,98 @@ bitflags! {
     }
 }
 
+pub struct UnallocatedTexelArray<'a> {
+    texel_array: TexelArray,
+    _initial_data: std::marker::PhantomData<&'a i32>,
+}
+
+impl<'a> UnallocatedTexelArray<'a> {
+    pub(crate) fn new(
+        handle: sys::Cobalt_TexelArray,
+        renderer_internal: Arc<RendererInternal>,
+    ) -> Self {
+        UnallocatedTexelArray {
+            texel_array: TexelArray::new(handle, renderer_internal),
+            _initial_data: std::marker::PhantomData,
+        }
+    }
+
+    pub fn set_buffer_layout(
+        &mut self,
+        image_format: ImageFormat,
+        data_format: DataFormat,
+        entry_count: usize,
+    ) {
+        unsafe {
+            sys::Cobalt_TexelArray_SetBufferLayout(
+                self.texel_array.handle,
+                image_format as sys::Cobalt_TexelArrayImageFormat,
+                data_format as sys::Cobalt_TexelArrayDataFormat,
+                entry_count,
+            )
+        }
+    }
+
+    pub fn set_usage_flags(&mut self, usage_flags: TexelArrayUsageFlags) {
+        unsafe {
+            sys::Cobalt_TexelArray_SetUsageFlags(
+                self.texel_array.handle,
+                usage_flags.bits() as sys::Cobalt_TexelArrayUsageFlags,
+            )
+        }
+    }
+
+    pub fn set_initial_data<S: Sized>(
+        &mut self,
+        source_buffer: &'a [S],
+        image_format: SourceImageFormat,
+        data_format: SourceDataFormat,
+    ) -> RendererResult<()> {
+        unsafe {
+            return_on_failure!(sys::Cobalt_TexelArray_SetInitialData(
+                self.texel_array.handle,
+                source_buffer.as_ptr() as *const std::ffi::c_void,
+                core::mem::size_of_val(source_buffer),
+                image_format as sys::Cobalt_TexelArraySourceImageFormat,
+                data_format as sys::Cobalt_TexelArraySourceDataFormat,
+            ))
+        }
+        Ok(())
+    }
+
+    pub fn set_performance_hints(
+        &mut self,
+        performance_hint_cpu: PerformanceHint,
+        performance_hint_gpu: PerformanceHint,
+    ) {
+        unsafe {
+            sys::Cobalt_ResourceArray_SetPerformanceHints(
+                self.texel_array.handle as sys::Cobalt_ResourceArray,
+                performance_hint_cpu.bits() as sys::Cobalt_ResourceArrayPerformanceHint,
+                performance_hint_gpu.bits() as sys::Cobalt_ResourceArrayPerformanceHint,
+            )
+        }
+    }
+
+    pub fn set_data_persistence_flags(&mut self, data_persistence_flags: PersistenceFlags) {
+        unsafe {
+            sys::Cobalt_ResourceArray_SetDataPersistenceFlags(
+                self.texel_array.handle as sys::Cobalt_ResourceArray,
+                data_persistence_flags.bits() as sys::Cobalt_ResourceArrayDataPersistenceFlags,
+            )
+        }
+    }
+
+    pub fn allocate_memory(self) -> RendererResult<TexelArray> {
+        unsafe {
+            return_on_failure!(sys::Cobalt_TexelArray_AllocateMemory(
+                self.texel_array.handle
+            ))
+        }
+        Ok(self.texel_array)
+    }
+}
+
 pub struct TexelArray {
     pub(crate) handle: sys::Cobalt_TexelArray,
     _renderer: Arc<RendererInternal>,
@@ -200,54 +292,6 @@ impl TexelArray {
             handle,
             _renderer: renderer_internal,
         }
-    }
-
-    pub fn allocate_memory(&mut self) -> RendererResult<()> {
-        unsafe { return_on_failure!(sys::Cobalt_TexelArray_AllocateMemory(self.handle)) }
-        Ok(())
-    }
-
-    pub fn set_buffer_layout(
-        &mut self,
-        image_format: ImageFormat,
-        data_format: DataFormat,
-        entry_count: usize,
-    ) {
-        unsafe {
-            sys::Cobalt_TexelArray_SetBufferLayout(
-                self.handle,
-                image_format as sys::Cobalt_TexelArrayImageFormat,
-                data_format as sys::Cobalt_TexelArrayDataFormat,
-                entry_count,
-            )
-        }
-    }
-
-    pub fn set_usage_flags(&mut self, usage_flags: TexelArrayUsageFlags) {
-        unsafe {
-            sys::Cobalt_TexelArray_SetUsageFlags(
-                self.handle,
-                usage_flags.bits() as sys::Cobalt_TexelArrayUsageFlags,
-            )
-        }
-    }
-
-    pub fn set_initial_data<S: Sized>(
-        &mut self,
-        source_buffer: &[S],
-        image_format: SourceImageFormat,
-        data_format: SourceDataFormat,
-    ) -> RendererResult<()> {
-        unsafe {
-            return_on_failure!(sys::Cobalt_TexelArray_SetInitialData(
-                self.handle,
-                source_buffer.as_ptr() as *const std::ffi::c_void,
-                core::mem::size_of_val(source_buffer),
-                image_format as sys::Cobalt_TexelArraySourceImageFormat,
-                data_format as sys::Cobalt_TexelArraySourceDataFormat,
-            ))
-        }
-        Ok(())
     }
 
     pub fn queue_data_update<S: Sized>(
@@ -307,12 +351,6 @@ impl TexelArray {
 
     pub fn remove_output_capture_target(&mut self, output: &mut TexelArrayOutput) {
         unsafe { sys::Cobalt_TexelArray_RemoveOutputCaptureTarget(self.handle, output.handle) }
-    }
-}
-
-impl ResourceArray for TexelArray {
-    fn array_handle(&mut self) -> sys::Cobalt_ResourceArray {
-        self.handle as sys::Cobalt_ResourceArray
     }
 }
 

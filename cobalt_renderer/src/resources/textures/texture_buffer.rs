@@ -366,38 +366,6 @@ pub trait TextureBuffer {
     #[doc(hidden)]
     fn texture_handle(&self) -> sys::Cobalt_TextureBuffer;
 
-    fn set_usage_flags(&mut self, usage_flags: TextureUsageFlags) {
-        unsafe {
-            sys::Cobalt_TextureBuffer_SetUsageFlags(
-                self.texture_handle(),
-                usage_flags.bits() as sys::Cobalt_TextureUsageFlags,
-            );
-        }
-    }
-
-    fn set_performance_hints(
-        &mut self,
-        performance_hint_cpu: PerformanceHint,
-        performance_hint_gpu: PerformanceHint,
-    ) {
-        unsafe {
-            sys::Cobalt_TextureBuffer_SetPerformanceHints(
-                self.texture_handle(),
-                performance_hint_cpu.bits() as sys::Cobalt_TexturePerformanceHint,
-                performance_hint_gpu.bits() as sys::Cobalt_TexturePerformanceHint,
-            );
-        }
-    }
-
-    fn set_data_persistence_flags(&mut self, data_persistence_flags: DataPersistenceFlags) {
-        unsafe {
-            sys::Cobalt_TextureBuffer_SetDataPersistenceFlags(
-                self.texture_handle(),
-                data_persistence_flags.bits() as sys::Cobalt_TextureDataPersistenceFlags,
-            );
-        }
-    }
-
     #[doc(hidden)]
     fn bind_to_state_container(
         &mut self,

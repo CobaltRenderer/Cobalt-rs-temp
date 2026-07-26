@@ -27,39 +27,3 @@ bitflags! {
         const InvalidateExistingDataAfterDrawComplete = sys::Cobalt_ResourceArrayDataPersistenceFlags_InvalidateExistingDataAfterDrawComplete as u32;
     }
 }
-
-// This is a workaround for Rust not having generic specialization
-// which would allow us to have different functions under the same name
-// that would take different input types and have different implementations.
-// Instead we have a trait which we only implement on some types
-// which then have specializations. Then we can have one generic
-// function which takes this trait and calls the specialized function
-// on the type. Not ideal but functional
-
-pub trait ResourceArray {
-    #[doc(hidden)]
-    fn array_handle(&mut self) -> sys::Cobalt_ResourceArray;
-
-    fn set_performance_hints(
-        &mut self,
-        performance_hint_cpu: PerformanceHint,
-        performance_hint_gpu: PerformanceHint,
-    ) {
-        unsafe {
-            sys::Cobalt_ResourceArray_SetPerformanceHints(
-                self.array_handle(),
-                performance_hint_cpu.bits() as sys::Cobalt_ResourceArrayPerformanceHint,
-                performance_hint_gpu.bits() as sys::Cobalt_ResourceArrayPerformanceHint,
-            )
-        }
-    }
-
-    fn set_data_persistence_flags(&mut self, data_persistence_flags: PersistenceFlags) {
-        unsafe {
-            sys::Cobalt_ResourceArray_SetDataPersistenceFlags(
-                self.array_handle(),
-                data_persistence_flags.bits() as sys::Cobalt_ResourceArrayDataPersistenceFlags,
-            )
-        }
-    }
-}

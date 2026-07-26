@@ -220,21 +220,16 @@ impl winit::application::ApplicationHandler for App {
             geometry::DataPersistenceFlags::PersistAlways,
         );
 
-        // Create vertex buffer to hold attributes
+        // Create vertex buffer to hold attributes, set initial data
+        // and allocate the buffer memory
         let mut vertex_buffer = renderer.create_vertex_buffer();
         vertex_buffer
-            .bind_vertex_attribute(&mut position_attribute)
+            .bind_attribute_with_initial_data(&mut position_attribute, &POSITIONS, None)
             .unwrap();
         vertex_buffer
-            .bind_vertex_attribute(&mut color_attribute)
+            .bind_attribute_with_initial_data(&mut color_attribute, &COLORS, None)
             .unwrap();
-
-        // Set the initial data and allocate the buffer memory
-        position_attribute
-            .set_initial_data(&POSITIONS, None)
-            .unwrap();
-        color_attribute.set_initial_data(&COLORS, None).unwrap();
-        vertex_buffer.allocate_memory().unwrap();
+        let vertex_buffer = vertex_buffer.allocate_memory().unwrap();
 
         // Create a renderable to define what data to draw
         let mut renderable_node = renderer.create_renderable_node();

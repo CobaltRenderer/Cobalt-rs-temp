@@ -185,13 +185,18 @@ impl FrameBuffer {
 
     /// # Safety
     ///
-    /// [`Window`] contains raw pointers to system displays and windows. These must be valid pointers
-    /// and the resources they point to must be valid for the lifetime of the framebuffer.
-    /// This includes during it's deferred deletion at the beginning of the next frame.
+    /// 1. Different platforms have requirements for windows to be bound on the main thread, or on the
+    ///    thread which creates the window. Please consult these for your target platform. For best
+    ///    cross-platform usage, only create windows on the main thread and call this function on the
+    ///    main thread.
+    /// 2. [`Window`] contains raw pointers to system displays and windows. These must be valid pointers
+    ///    and the resources they point to must be valid for the lifetime of the framebuffer.
+    ///    This includes during it's deferred deletion at the beginning of the next frame.
+    ///    To avoid potential use after free, it's recommended to drop the framebuffer, wait
+    ///    for it's deletion using [`crate::renderer::Renderer::wait_for_deferred_deletion_complete`],
+    ///    then delete the window.
     ///
-    /// To avoid potential use after free, it's recommended to drop the framebuffer, wait
-    /// for it's deletion using [`crate::renderer::Renderer::wait_for_deferred_deletion_complete`],
-    /// then delete the window.
+    /// # Resizing
     ///
     /// When the window is resized, a call to [`FrameBuffer::notify_window_resized`] should be called.
     pub unsafe fn bind_window(

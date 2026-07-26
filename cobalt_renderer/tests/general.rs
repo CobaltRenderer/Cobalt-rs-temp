@@ -138,27 +138,18 @@ fn general() {
 
     let mut vertex_buffer = renderer.create_vertex_buffer();
     vertex_buffer
-        .bind_vertex_attribute_manual_layout(
-            &mut position_attribute,
-            0,
-            std::mem::size_of::<Vertex>(),
-        )
+        .bind_attribute_manual_layout(&mut position_attribute, 0, std::mem::size_of::<Vertex>())
         .unwrap();
     vertex_buffer
-        .bind_vertex_attribute_manual_layout(
-            &mut color_attribute,
-            12,
-            std::mem::size_of::<Vertex>(),
-        )
+        .bind_attribute_manual_layout(&mut color_attribute, 12, std::mem::size_of::<Vertex>())
         .unwrap();
     vertex_buffer.set_raw_initial_data(&vertices).unwrap();
     vertex_buffer.allocate_memory().unwrap();
 
     let mut index_buffer = renderer.create_index_buffer();
     index_buffer
-        .bind_index_attribute(&mut index_attribute)
+        .bind_attribute_with_initial_data(&mut index_attribute, &indices, None)
         .unwrap();
-    index_attribute.set_initial_data(&indices, None).unwrap();
     index_buffer.allocate_memory().unwrap();
 
     renderable

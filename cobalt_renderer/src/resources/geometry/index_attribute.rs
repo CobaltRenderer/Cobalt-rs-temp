@@ -21,7 +21,7 @@ pub enum IndexAttributeType {
 pub struct IndexAttribute {
     pub(crate) handle: sys::Cobalt_IndexAttribute,
     _renderer: Arc<RendererInternal>,
-    element_size: usize,
+    pub(crate) element_size: usize,
 }
 
 impl IndexAttribute {
@@ -97,22 +97,6 @@ impl IndexAttribute {
                 self.handle,
             ) as u32)
         }
-    }
-
-    pub fn set_initial_data<S: Sized>(
-        &mut self,
-        data: &[S],
-        entry_stride_in_bytes: Option<usize>,
-    ) -> RendererResult<()> {
-        unsafe {
-            return_on_failure!(sys::Cobalt_IndexAttribute_SetInitialData(
-                self.handle,
-                data.as_ptr() as *const u8,
-                data.len(),
-                entry_stride_in_bytes.unwrap_or(self.element_size),
-            ))
-        }
-        Ok(())
     }
 
     pub fn queue_data_update<S: Sized>(

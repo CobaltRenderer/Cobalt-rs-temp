@@ -4,7 +4,8 @@ use num_enum::TryFromPrimitive;
 use std::sync::Arc;
 
 use super::{
-    CubeMapFace, DataFormat, ImageFormat, SourceDataFormat, SourceImageFormat, TextureBuffer,
+    CubeMapFace, DataFormat, DataPersistenceFlags, ImageFormat, PerformanceHint, SourceDataFormat,
+    SourceImageFormat, TextureBuffer, TextureUsageFlags,
 };
 use crate::RendererResult;
 use crate::render_tree::StateContainer;
@@ -13,6 +14,106 @@ use crate::resources::TextureId;
 use crate::resources::batching::TransferBatch;
 
 use cobalt_renderer_sys as sys;
+
+pub struct UnallocatedTextureBufferCube<'a> {
+    texture_buffer: TextureBufferCube,
+    _initial_data: std::marker::PhantomData<&'a i32>,
+}
+
+impl<'a> UnallocatedTextureBufferCube<'a> {
+    pub(crate) fn new(
+        handle: sys::Cobalt_TextureBufferCube,
+        renderer_internal: Arc<RendererInternal>,
+    ) -> Self {
+        UnallocatedTextureBufferCube {
+            texture_buffer: TextureBufferCube::new(handle, renderer_internal),
+            _initial_data: std::marker::PhantomData,
+        }
+    }
+
+    pub fn set_texture_format(&mut self, image_format: ImageFormat, data_format: DataFormat) {
+        unsafe {
+            sys::Cobalt_TextureBufferCube_SetTextureFormat(
+                self.texture_buffer.handle,
+                image_format as sys::Cobalt_ImageFormat,
+                data_format as sys::Cobalt_DataFormat,
+            );
+        }
+    }
+
+    pub fn set_texture_dimensions(&mut self, face_length: u32, mipmap_level_count: Option<i32>) {
+        unsafe {
+            sys::Cobalt_TextureBufferCube_SetTextureDimensions(
+                self.texture_buffer.handle,
+                face_length,
+                mipmap_level_count.unwrap_or(1),
+            )
+        }
+    }
+
+    pub fn set_initial_data<S: Sized>(
+        &mut self,
+        source_buffer: &'a [S],
+        image_format: SourceImageFormat,
+        data_format: SourceDataFormat,
+        target_face: CubeMapFace,
+        mipmap_level: Option<i32>,
+    ) -> RendererResult<()> {
+        unsafe {
+            return_on_failure!(sys::Cobalt_TextureBufferCube_SetInitialData(
+                self.texture_buffer.handle,
+                source_buffer.as_ptr() as *const std::ffi::c_void,
+                core::mem::size_of_val(source_buffer),
+                image_format as sys::Cobalt_SourceImageFormat,
+                data_format as sys::Cobalt_SourceDataFormat,
+                target_face as sys::Cobalt_CubeMapFace,
+                mipmap_level.unwrap_or(0),
+            ))
+        }
+        Ok(())
+    }
+
+    pub fn set_usage_flags(&mut self, usage_flags: TextureUsageFlags) {
+        unsafe {
+            sys::Cobalt_TextureBuffer_SetUsageFlags(
+                self.texture_buffer.handle as sys::Cobalt_TextureBuffer,
+                usage_flags.bits() as sys::Cobalt_TextureUsageFlags,
+            );
+        }
+    }
+
+    pub fn set_performance_hints(
+        &mut self,
+        performance_hint_cpu: PerformanceHint,
+        performance_hint_gpu: PerformanceHint,
+    ) {
+        unsafe {
+            sys::Cobalt_TextureBuffer_SetPerformanceHints(
+                self.texture_buffer.handle as sys::Cobalt_TextureBuffer,
+                performance_hint_cpu.bits() as sys::Cobalt_TexturePerformanceHint,
+                performance_hint_gpu.bits() as sys::Cobalt_TexturePerformanceHint,
+            );
+        }
+    }
+
+    pub fn set_data_persistence_flags(&mut self, data_persistence_flags: DataPersistenceFlags) {
+        unsafe {
+            sys::Cobalt_TextureBuffer_SetDataPersistenceFlags(
+                self.texture_buffer.handle as sys::Cobalt_TextureBuffer,
+                data_persistence_flags.bits() as sys::Cobalt_TextureDataPersistenceFlags,
+            );
+        }
+    }
+
+    pub fn allocate_memory(self) -> RendererResult<TextureBufferCube> {
+        unsafe {
+            return_on_failure!(sys::Cobalt_TextureBufferCube_AllocateMemory(
+                self.texture_buffer.handle
+            ))
+        }
+        Ok(self.texture_buffer)
+    }
+}
 
 pub struct TextureBufferCube {
     pub(crate) handle: sys::Cobalt_TextureBufferCube,
@@ -27,31 +128,6 @@ impl TextureBufferCube {
         TextureBufferCube {
             handle,
             _renderer: renderer_internal,
-        }
-    }
-
-    pub fn allocate_memory(&mut self) -> RendererResult<()> {
-        unsafe { return_on_failure!(sys::Cobalt_TextureBufferCube_AllocateMemory(self.handle)) }
-        Ok(())
-    }
-
-    pub fn set_texture_format(&mut self, image_format: ImageFormat, data_format: DataFormat) {
-        unsafe {
-            sys::Cobalt_TextureBufferCube_SetTextureFormat(
-                self.handle,
-                image_format as sys::Cobalt_ImageFormat,
-                data_format as sys::Cobalt_DataFormat,
-            );
-        }
-    }
-
-    pub fn set_texture_dimensions(&mut self, face_length: u32, mipmap_level_count: Option<i32>) {
-        unsafe {
-            sys::Cobalt_TextureBufferCube_SetTextureDimensions(
-                self.handle,
-                face_length,
-                mipmap_level_count.unwrap_or(1),
-            )
         }
     }
 
@@ -79,28 +155,6 @@ impl TextureBufferCube {
             );
             dimensions
         }
-    }
-
-    pub fn set_initial_data<S: Sized>(
-        &mut self,
-        source_buffer: &[S],
-        image_format: SourceImageFormat,
-        data_format: SourceDataFormat,
-        target_face: CubeMapFace,
-        mipmap_level: Option<i32>,
-    ) -> RendererResult<()> {
-        unsafe {
-            return_on_failure!(sys::Cobalt_TextureBufferCube_SetInitialData(
-                self.handle,
-                source_buffer.as_ptr() as *const std::ffi::c_void,
-                core::mem::size_of_val(source_buffer),
-                image_format as sys::Cobalt_SourceImageFormat,
-                data_format as sys::Cobalt_SourceDataFormat,
-                target_face as sys::Cobalt_CubeMapFace,
-                mipmap_level.unwrap_or(0),
-            ))
-        }
-        Ok(())
     }
 
     #[allow(clippy::too_many_arguments)]

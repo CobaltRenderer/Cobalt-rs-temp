@@ -6,7 +6,6 @@
 #![allow(dead_code)]
 
 use cobalt_renderer::renderer::*;
-use cobalt_renderer::resources::textures::TextureBuffer;
 use cobalt_renderer::resources::*;
 
 pub struct CaptureContext {
@@ -61,7 +60,7 @@ pub fn setup_frame_buffer_for_capture(renderer: &Renderer) -> CaptureContext {
     texture.set_usage_flags(textures::TextureUsageFlags::FrameBufferOutput);
     texture.set_texture_dimensions(&[1024, 1024], None);
     texture.set_texture_format(textures::ImageFormat::RGBA, textures::DataFormat::UNorm8);
-    texture
+    let mut texture = texture
         .allocate_memory()
         .expect("Failed to allocate memory for texture buffer");
 

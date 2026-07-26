@@ -3,7 +3,10 @@
 use num_enum::TryFromPrimitive;
 use std::sync::Arc;
 
-use super::{DataFormat, ImageFormat, SourceDataFormat, SourceImageFormat, TextureBuffer};
+use super::{
+    DataFormat, DataPersistenceFlags, ImageFormat, PerformanceHint, SourceDataFormat,
+    SourceImageFormat, TextureBuffer, TextureUsageFlags,
+};
 use crate::RendererResult;
 use crate::render_tree::StateContainer;
 use crate::renderer::RendererInternal;
@@ -12,31 +15,26 @@ use crate::resources::batching::TransferBatch;
 
 use cobalt_renderer_sys as sys;
 
-pub struct TextureBuffer1DArray {
-    pub(crate) handle: sys::Cobalt_TextureBuffer1DArray,
-    _renderer: Arc<RendererInternal>,
+pub struct UnallocatedTextureBuffer1DArray<'a> {
+    texture_buffer: TextureBuffer1DArray,
+    _initial_data: std::marker::PhantomData<&'a i32>,
 }
 
-impl TextureBuffer1DArray {
+impl<'a> UnallocatedTextureBuffer1DArray<'a> {
     pub(crate) fn new(
         handle: sys::Cobalt_TextureBuffer1DArray,
         renderer_internal: Arc<RendererInternal>,
     ) -> Self {
-        TextureBuffer1DArray {
-            handle,
-            _renderer: renderer_internal,
+        UnallocatedTextureBuffer1DArray {
+            texture_buffer: TextureBuffer1DArray::new(handle, renderer_internal),
+            _initial_data: std::marker::PhantomData,
         }
-    }
-
-    pub fn allocate_memory(&mut self) -> RendererResult<()> {
-        unsafe { return_on_failure!(sys::Cobalt_TextureBuffer1DArray_AllocateMemory(self.handle)) }
-        Ok(())
     }
 
     pub fn set_texture_format(&mut self, image_format: ImageFormat, data_format: DataFormat) {
         unsafe {
             sys::Cobalt_TextureBuffer1DArray_SetTextureFormat(
-                self.handle,
+                self.texture_buffer.handle,
                 image_format as sys::Cobalt_ImageFormat,
                 data_format as sys::Cobalt_DataFormat,
             );
@@ -51,11 +49,90 @@ impl TextureBuffer1DArray {
     ) {
         unsafe {
             sys::Cobalt_TextureBuffer1DArray_SetTextureDimensions(
-                self.handle,
+                self.texture_buffer.handle,
                 image_dimensions,
                 array_size,
                 mipmap_level_count.unwrap_or(1),
             )
+        }
+    }
+
+    pub fn set_initial_data<S: Sized>(
+        &mut self,
+        source_buffer: &'a [S],
+        image_format: SourceImageFormat,
+        data_format: SourceDataFormat,
+        array_index: usize,
+        mipmap_level: Option<i32>,
+    ) -> RendererResult<()> {
+        unsafe {
+            return_on_failure!(sys::Cobalt_TextureBuffer1DArray_SetInitialData(
+                self.texture_buffer.handle,
+                source_buffer.as_ptr() as *const std::ffi::c_void,
+                core::mem::size_of_val(source_buffer),
+                image_format as sys::Cobalt_SourceImageFormat,
+                data_format as sys::Cobalt_SourceDataFormat,
+                array_index,
+                mipmap_level.unwrap_or(0),
+            ))
+        }
+        Ok(())
+    }
+
+    pub fn set_usage_flags(&mut self, usage_flags: TextureUsageFlags) {
+        unsafe {
+            sys::Cobalt_TextureBuffer_SetUsageFlags(
+                self.texture_buffer.handle as sys::Cobalt_TextureBuffer,
+                usage_flags.bits() as sys::Cobalt_TextureUsageFlags,
+            );
+        }
+    }
+
+    pub fn set_performance_hints(
+        &mut self,
+        performance_hint_cpu: PerformanceHint,
+        performance_hint_gpu: PerformanceHint,
+    ) {
+        unsafe {
+            sys::Cobalt_TextureBuffer_SetPerformanceHints(
+                self.texture_buffer.handle as sys::Cobalt_TextureBuffer,
+                performance_hint_cpu.bits() as sys::Cobalt_TexturePerformanceHint,
+                performance_hint_gpu.bits() as sys::Cobalt_TexturePerformanceHint,
+            );
+        }
+    }
+
+    pub fn set_data_persistence_flags(&mut self, data_persistence_flags: DataPersistenceFlags) {
+        unsafe {
+            sys::Cobalt_TextureBuffer_SetDataPersistenceFlags(
+                self.texture_buffer.handle as sys::Cobalt_TextureBuffer,
+                data_persistence_flags.bits() as sys::Cobalt_TextureDataPersistenceFlags,
+            );
+        }
+    }
+
+    pub fn allocate_memory(self) -> RendererResult<TextureBuffer1DArray> {
+        unsafe {
+            return_on_failure!(sys::Cobalt_TextureBuffer1DArray_AllocateMemory(
+                self.texture_buffer.handle
+            ))
+        }
+        Ok(self.texture_buffer)
+    }
+}
+pub struct TextureBuffer1DArray {
+    pub(crate) handle: sys::Cobalt_TextureBuffer1DArray,
+    _renderer: Arc<RendererInternal>,
+}
+
+impl TextureBuffer1DArray {
+    pub(crate) fn new(
+        handle: sys::Cobalt_TextureBuffer1DArray,
+        renderer_internal: Arc<RendererInternal>,
+    ) -> Self {
+        TextureBuffer1DArray {
+            handle,
+            _renderer: renderer_internal,
         }
     }
 
@@ -83,28 +160,6 @@ impl TextureBuffer1DArray {
             );
             dimensions
         }
-    }
-
-    pub fn set_initial_data<S: Sized>(
-        &mut self,
-        source_buffer: &[S],
-        image_format: SourceImageFormat,
-        data_format: SourceDataFormat,
-        array_index: usize,
-        mipmap_level: Option<i32>,
-    ) -> RendererResult<()> {
-        unsafe {
-            return_on_failure!(sys::Cobalt_TextureBuffer1DArray_SetInitialData(
-                self.handle,
-                source_buffer.as_ptr() as *const std::ffi::c_void,
-                core::mem::size_of_val(source_buffer),
-                image_format as sys::Cobalt_SourceImageFormat,
-                data_format as sys::Cobalt_SourceDataFormat,
-                array_index,
-                mipmap_level.unwrap_or(0),
-            ))
-        }
-        Ok(())
     }
 
     #[allow(clippy::too_many_arguments)]

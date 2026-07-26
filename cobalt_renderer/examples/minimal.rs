@@ -6,7 +6,6 @@
 // For a complete example with a window, check out the `hello_triangle` example
 
 // Cobalt Renderer
-use cobalt_renderer::prelude::*;
 use cobalt_renderer::renderer::{
     DeviceEnumerationFlags, RendererInitializationFlags, WindowSystem,
 };
@@ -68,7 +67,7 @@ fn main() {
     texture.set_usage_flags(textures::TextureUsageFlags::FrameBufferOutput);
     texture.set_texture_dimensions(&TEXTURE_SIZE, None);
     texture.set_texture_format(textures::ImageFormat::RGBA, textures::DataFormat::UNorm8);
-    texture
+    let mut texture = texture
         .allocate_memory()
         .expect("Failed to allocate memory for texture buffer");
 
@@ -149,21 +148,16 @@ fn main() {
         geometry::DataPersistenceFlags::PersistAlways,
     );
 
-    // Create vertex buffer to hold attributes
+    // Create vertex buffer to hold attributes, set initial data
+    // and allocate the buffer memory
     let mut vertex_buffer = renderer.create_vertex_buffer();
     vertex_buffer
-        .bind_vertex_attribute(&mut position_attribute)
+        .bind_attribute_with_initial_data(&mut position_attribute, &POSITIONS, None)
         .unwrap();
     vertex_buffer
-        .bind_vertex_attribute(&mut color_attribute)
+        .bind_attribute_with_initial_data(&mut color_attribute, &COLORS, None)
         .unwrap();
-
-    // Set the initial data and allocate the buffer memory
-    position_attribute
-        .set_initial_data(&POSITIONS, None)
-        .unwrap();
-    color_attribute.set_initial_data(&COLORS, None).unwrap();
-    vertex_buffer.allocate_memory().unwrap();
+    let _vertex_buffer = vertex_buffer.allocate_memory().unwrap();
 
     // Create a renderable to define what data to draw
     let mut renderable_node = renderer.create_renderable_node();

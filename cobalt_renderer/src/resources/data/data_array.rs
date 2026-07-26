@@ -3,7 +3,7 @@
 use bitflags::bitflags;
 use std::sync::Arc;
 
-use super::{DataArrayOutput, ResourceArray};
+use super::{DataArrayOutput, PerformanceHint, PersistenceFlags};
 use crate::RendererResult;
 use crate::renderer::RendererInternal;
 use crate::resources::batching::TransferBatch;
@@ -24,6 +24,91 @@ bitflags! {
     }
 }
 
+pub struct UnallocatedDataArray<'a> {
+    data_array: DataArray,
+    _initial_data: std::marker::PhantomData<&'a i32>,
+}
+
+impl<'a> UnallocatedDataArray<'a> {
+    pub(crate) fn new(
+        handle: sys::Cobalt_DataArray,
+        renderer_internal: Arc<RendererInternal>,
+    ) -> Self {
+        UnallocatedDataArray {
+            data_array: DataArray::new(handle, renderer_internal),
+            _initial_data: std::marker::PhantomData,
+        }
+    }
+
+    pub fn set_buffer_layout(
+        &mut self,
+        entry_stride_in_bytes: usize,
+        entry_count: usize,
+        has_counter: bool,
+        counter_reset_value: u32,
+    ) {
+        unsafe {
+            sys::Cobalt_DataArray_SetBufferLayout(
+                self.data_array.handle,
+                entry_stride_in_bytes,
+                entry_count,
+                if has_counter { 1 } else { 0 },
+                counter_reset_value,
+            )
+        }
+    }
+
+    pub fn set_usage_flags(&mut self, usage_flags: DataArrayUsageFlags) {
+        unsafe {
+            sys::Cobalt_DataArray_SetUsageFlags(
+                self.data_array.handle,
+                usage_flags.bits() as sys::Cobalt_DataArrayUsageFlags,
+            )
+        }
+    }
+
+    pub fn set_initial_data<S: Sized>(&mut self, source_buffer: &'a [S]) -> RendererResult<()> {
+        unsafe {
+            return_on_failure!(sys::Cobalt_DataArray_SetInitialData(
+                self.data_array.handle,
+                source_buffer.as_ptr() as *const std::ffi::c_void,
+                core::mem::size_of_val(source_buffer),
+            ))
+        }
+        Ok(())
+    }
+
+    pub fn set_performance_hints(
+        &mut self,
+        performance_hint_cpu: PerformanceHint,
+        performance_hint_gpu: PerformanceHint,
+    ) {
+        unsafe {
+            sys::Cobalt_ResourceArray_SetPerformanceHints(
+                self.data_array.handle as sys::Cobalt_ResourceArray,
+                performance_hint_cpu.bits() as sys::Cobalt_ResourceArrayPerformanceHint,
+                performance_hint_gpu.bits() as sys::Cobalt_ResourceArrayPerformanceHint,
+            )
+        }
+    }
+
+    pub fn set_data_persistence_flags(&mut self, data_persistence_flags: PersistenceFlags) {
+        unsafe {
+            sys::Cobalt_ResourceArray_SetDataPersistenceFlags(
+                self.data_array.handle as sys::Cobalt_ResourceArray,
+                data_persistence_flags.bits() as sys::Cobalt_ResourceArrayDataPersistenceFlags,
+            )
+        }
+    }
+
+    pub fn allocate_memory(self) -> RendererResult<DataArray> {
+        unsafe {
+            return_on_failure!(sys::Cobalt_DataArray_AllocateMemory(self.data_array.handle));
+        }
+        Ok(self.data_array)
+    }
+}
+
 pub struct DataArray {
     pub(crate) handle: sys::Cobalt_DataArray,
     _renderer: Arc<RendererInternal>,
@@ -38,51 +123,6 @@ impl DataArray {
             handle,
             _renderer: renderer_internal,
         }
-    }
-
-    pub fn allocate_memory(&mut self) -> RendererResult<()> {
-        unsafe {
-            return_on_failure!(sys::Cobalt_DataArray_AllocateMemory(self.handle));
-        }
-        Ok(())
-    }
-
-    pub fn set_buffer_layout(
-        &mut self,
-        entry_stride_in_bytes: usize,
-        entry_count: usize,
-        has_counter: bool,
-        counter_reset_value: u32,
-    ) {
-        unsafe {
-            sys::Cobalt_DataArray_SetBufferLayout(
-                self.handle,
-                entry_stride_in_bytes,
-                entry_count,
-                if has_counter { 1 } else { 0 },
-                counter_reset_value,
-            )
-        }
-    }
-
-    pub fn set_usage_flags(&mut self, usage_flags: DataArrayUsageFlags) {
-        unsafe {
-            sys::Cobalt_DataArray_SetUsageFlags(
-                self.handle,
-                usage_flags.bits() as sys::Cobalt_DataArrayUsageFlags,
-            )
-        }
-    }
-
-    pub fn set_initial_data<S: Sized>(&mut self, source_buffer: &[S]) -> RendererResult<()> {
-        unsafe {
-            return_on_failure!(sys::Cobalt_DataArray_SetInitialData(
-                self.handle,
-                source_buffer.as_ptr() as *const std::ffi::c_void,
-                core::mem::size_of_val(source_buffer),
-            ))
-        }
-        Ok(())
     }
 
     pub fn queue_data_update<S: Sized>(
@@ -142,12 +182,6 @@ impl DataArray {
 
     pub fn remove_output_capture_target(&mut self, output: &mut DataArrayOutput) {
         unsafe { sys::Cobalt_DataArray_RemoveOutputCaptureTarget(self.handle, output.handle) }
-    }
-}
-
-impl ResourceArray for DataArray {
-    fn array_handle(&mut self) -> sys::Cobalt_ResourceArray {
-        self.handle as sys::Cobalt_ResourceArray
     }
 }
 

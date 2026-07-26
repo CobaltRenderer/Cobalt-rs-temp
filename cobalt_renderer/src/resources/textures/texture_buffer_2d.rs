@@ -4,7 +4,8 @@ use num_enum::TryFromPrimitive;
 use std::sync::Arc;
 
 use super::{
-    DataFormat, ImageFormat, SampleCount, SourceDataFormat, SourceImageFormat, TextureBuffer,
+    DataFormat, DataPersistenceFlags, ImageFormat, PerformanceHint, SampleCount, SourceDataFormat,
+    SourceImageFormat, TextureBuffer, TextureUsageFlags,
 };
 use crate::RendererResult;
 use crate::render_tree::StateContainer;
@@ -13,6 +14,133 @@ use crate::resources::TextureId;
 use crate::resources::batching::TransferBatch;
 
 use cobalt_renderer_sys as sys;
+
+pub struct UnallocatedTextureBuffer2D<'a> {
+    texture_buffer: TextureBuffer2D,
+    _initial_data: std::marker::PhantomData<&'a i32>,
+}
+
+impl<'a> UnallocatedTextureBuffer2D<'a> {
+    pub(crate) fn new(
+        handle: sys::Cobalt_TextureBuffer2D,
+        renderer_internal: Arc<RendererInternal>,
+    ) -> Self {
+        UnallocatedTextureBuffer2D {
+            texture_buffer: TextureBuffer2D::new(handle, renderer_internal),
+            _initial_data: std::marker::PhantomData,
+        }
+    }
+
+    pub fn set_texture_format(&mut self, image_format: ImageFormat, data_format: DataFormat) {
+        unsafe {
+            sys::Cobalt_TextureBuffer2D_SetTextureFormat(
+                self.texture_buffer.handle,
+                image_format as sys::Cobalt_ImageFormat,
+                data_format as sys::Cobalt_DataFormat,
+            );
+        }
+    }
+
+    pub fn set_texture_dimensions(
+        &mut self,
+        image_dimensions: &[u32; 2],
+        mipmap_level_count: Option<i32>,
+    ) {
+        unsafe {
+            sys::Cobalt_TextureBuffer2D_SetTextureDimensions(
+                self.texture_buffer.handle,
+                image_dimensions,
+                mipmap_level_count.unwrap_or(1),
+            )
+        }
+    }
+
+    pub fn is_sample_count_supported(
+        &self,
+        image_format: ImageFormat,
+        data_format: DataFormat,
+        sample_count: SampleCount,
+    ) -> bool {
+        unsafe {
+            sys::Cobalt_TextureBuffer2D_IsSampleCountSupported(
+                self.texture_buffer.handle,
+                image_format as sys::Cobalt_ImageFormat,
+                data_format as sys::Cobalt_DataFormat,
+                sample_count as sys::Cobalt_SampleCount,
+            ) != 0
+        }
+    }
+
+    pub fn set_sample_count(&mut self, sample_count: SampleCount) {
+        unsafe {
+            sys::Cobalt_TextureBuffer2D_SetSampleCount(
+                self.texture_buffer.handle,
+                sample_count as sys::Cobalt_SampleCount,
+            )
+        }
+    }
+
+    pub fn set_initial_data<S: Sized>(
+        &mut self,
+        source_buffer: &'a [S],
+        image_format: SourceImageFormat,
+        data_format: SourceDataFormat,
+        mipmap_level: Option<i32>,
+    ) -> RendererResult<()> {
+        unsafe {
+            return_on_failure!(sys::Cobalt_TextureBuffer2D_SetInitialData(
+                self.texture_buffer.handle,
+                source_buffer.as_ptr() as *const std::ffi::c_void,
+                core::mem::size_of_val(source_buffer),
+                image_format as sys::Cobalt_SourceImageFormat,
+                data_format as sys::Cobalt_SourceDataFormat,
+                mipmap_level.unwrap_or(0),
+            ))
+        }
+        Ok(())
+    }
+
+    pub fn set_usage_flags(&mut self, usage_flags: TextureUsageFlags) {
+        unsafe {
+            sys::Cobalt_TextureBuffer_SetUsageFlags(
+                self.texture_buffer.handle as sys::Cobalt_TextureBuffer,
+                usage_flags.bits() as sys::Cobalt_TextureUsageFlags,
+            );
+        }
+    }
+
+    pub fn set_performance_hints(
+        &mut self,
+        performance_hint_cpu: PerformanceHint,
+        performance_hint_gpu: PerformanceHint,
+    ) {
+        unsafe {
+            sys::Cobalt_TextureBuffer_SetPerformanceHints(
+                self.texture_buffer.handle as sys::Cobalt_TextureBuffer,
+                performance_hint_cpu.bits() as sys::Cobalt_TexturePerformanceHint,
+                performance_hint_gpu.bits() as sys::Cobalt_TexturePerformanceHint,
+            );
+        }
+    }
+
+    pub fn set_data_persistence_flags(&mut self, data_persistence_flags: DataPersistenceFlags) {
+        unsafe {
+            sys::Cobalt_TextureBuffer_SetDataPersistenceFlags(
+                self.texture_buffer.handle as sys::Cobalt_TextureBuffer,
+                data_persistence_flags.bits() as sys::Cobalt_TextureDataPersistenceFlags,
+            );
+        }
+    }
+
+    pub fn allocate_memory(self) -> RendererResult<TextureBuffer2D> {
+        unsafe {
+            return_on_failure!(sys::Cobalt_TextureBuffer2D_AllocateMemory(
+                self.texture_buffer.handle
+            ))
+        }
+        Ok(self.texture_buffer)
+    }
+}
 
 pub struct TextureBuffer2D {
     pub(crate) handle: sys::Cobalt_TextureBuffer2D,
@@ -27,44 +155,6 @@ impl TextureBuffer2D {
         TextureBuffer2D {
             handle,
             _renderer: renderer_internal,
-        }
-    }
-
-    pub fn allocate_memory(&mut self) -> RendererResult<()> {
-        unsafe { return_on_failure!(sys::Cobalt_TextureBuffer2D_AllocateMemory(self.handle)) }
-        Ok(())
-    }
-
-    pub fn set_texture_format(&mut self, image_format: ImageFormat, data_format: DataFormat) {
-        unsafe {
-            sys::Cobalt_TextureBuffer2D_SetTextureFormat(
-                self.handle,
-                image_format as sys::Cobalt_ImageFormat,
-                data_format as sys::Cobalt_DataFormat,
-            );
-        }
-    }
-
-    pub fn set_texture_dimensions(
-        &mut self,
-        image_dimensions: &[u32; 2],
-        mipmap_level_count: Option<i32>,
-    ) {
-        unsafe {
-            sys::Cobalt_TextureBuffer2D_SetTextureDimensions(
-                self.handle,
-                image_dimensions,
-                mipmap_level_count.unwrap_or(1),
-            )
-        }
-    }
-
-    pub fn set_sample_count(&mut self, sample_count: SampleCount) {
-        unsafe {
-            sys::Cobalt_TextureBuffer2D_SetSampleCount(
-                self.handle,
-                sample_count as sys::Cobalt_SampleCount,
-            )
         }
     }
 
@@ -92,42 +182,6 @@ impl TextureBuffer2D {
             );
             dimensions
         }
-    }
-
-    pub fn is_sample_count_supported(
-        &self,
-        image_format: ImageFormat,
-        data_format: DataFormat,
-        sample_count: SampleCount,
-    ) -> bool {
-        unsafe {
-            sys::Cobalt_TextureBuffer2D_IsSampleCountSupported(
-                self.handle,
-                image_format as sys::Cobalt_ImageFormat,
-                data_format as sys::Cobalt_DataFormat,
-                sample_count as sys::Cobalt_SampleCount,
-            ) != 0
-        }
-    }
-
-    pub fn set_initial_data<S: Sized>(
-        &mut self,
-        source_buffer: &[S],
-        image_format: SourceImageFormat,
-        data_format: SourceDataFormat,
-        mipmap_level: Option<i32>,
-    ) -> RendererResult<()> {
-        unsafe {
-            return_on_failure!(sys::Cobalt_TextureBuffer2D_SetInitialData(
-                self.handle,
-                source_buffer.as_ptr() as *const std::ffi::c_void,
-                core::mem::size_of_val(source_buffer),
-                image_format as sys::Cobalt_SourceImageFormat,
-                data_format as sys::Cobalt_SourceDataFormat,
-                mipmap_level.unwrap_or(0),
-            ))
-        }
-        Ok(())
     }
 
     #[allow(clippy::too_many_arguments)]

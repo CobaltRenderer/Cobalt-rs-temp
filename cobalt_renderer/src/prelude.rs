@@ -8,7 +8,6 @@ pub use crate::render_tree::ConstantStateValueMatrix;
 pub use crate::render_tree::StateContainer;
 pub use crate::render_tree::StateValue;
 pub use crate::render_tree::StateValueMatrix;
-pub use crate::resources::data::ResourceArray;
 pub use crate::resources::data::StateBufferValue;
 pub use crate::resources::data::StateBufferValueMatrix;
 pub use crate::resources::textures::TextureBuffer;

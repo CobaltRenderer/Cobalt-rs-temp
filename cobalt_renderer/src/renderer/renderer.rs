@@ -132,28 +132,28 @@ impl Renderer {
         )
     }
 
-    pub fn create_vertex_buffer(&self) -> geometry::VertexBuffer {
+    pub fn create_vertex_buffer<'a>(&self) -> geometry::UnallocatedVertexBuffer<'a> {
         let mut vertex_buffer = std::ptr::null_mut();
         unsafe {
             sys::Cobalt_Renderer_CreateVertexBuffer(self.internal.handle, &mut vertex_buffer);
         }
-        geometry::VertexBuffer::new(vertex_buffer, self.internal.clone())
+        geometry::UnallocatedVertexBuffer::new(vertex_buffer, self.internal.clone())
     }
 
-    pub fn create_index_buffer(&self) -> geometry::IndexBuffer {
+    pub fn create_index_buffer<'a>(&self) -> geometry::UnallocatedIndexBuffer<'a> {
         let mut index_buffer = std::ptr::null_mut();
         unsafe {
             sys::Cobalt_Renderer_CreateIndexBuffer(self.internal.handle, &mut index_buffer);
         }
-        geometry::IndexBuffer::new(index_buffer, self.internal.clone())
+        geometry::UnallocatedIndexBuffer::new(index_buffer, self.internal.clone())
     }
 
-    pub fn create_texel_array(&self) -> data::TexelArray {
+    pub fn create_texel_array<'a>(&self) -> data::UnallocatedTexelArray<'a> {
         let mut array = std::ptr::null_mut();
         unsafe {
             sys::Cobalt_Renderer_CreateTexelArray(self.internal.handle, &mut array);
         }
-        data::TexelArray::new(array, self.internal.clone())
+        data::UnallocatedTexelArray::new(array, self.internal.clone())
     }
 
     pub fn create_texel_array_output(&self) -> data::TexelArrayOutput {
@@ -164,12 +164,12 @@ impl Renderer {
         data::TexelArrayOutput::new(array, self.internal.clone())
     }
 
-    pub fn create_data_array(&self) -> data::DataArray {
+    pub fn create_data_array<'a>(&self) -> data::UnallocatedDataArray<'a> {
         let mut array = std::ptr::null_mut();
         unsafe {
             sys::Cobalt_Renderer_CreateDataArray(self.internal.handle, &mut array);
         }
-        data::DataArray::new(array, self.internal.clone())
+        data::UnallocatedDataArray::new(array, self.internal.clone())
     }
 
     pub fn create_data_array_output(&self) -> data::DataArrayOutput {
@@ -180,39 +180,41 @@ impl Renderer {
         data::DataArrayOutput::new(array, self.internal.clone())
     }
 
-    pub fn create_texture_buffer_1d(&self) -> textures::TextureBuffer1D {
+    pub fn create_texture_buffer_1d<'a>(&self) -> textures::UnallocatedTextureBuffer1D<'a> {
         let mut texture_buffer = std::ptr::null_mut();
         unsafe {
             sys::Cobalt_Renderer_CreateTextureBuffer1D(self.internal.handle, &mut texture_buffer);
         }
-        textures::TextureBuffer1D::new(texture_buffer, self.internal.clone())
+        textures::UnallocatedTextureBuffer1D::new(texture_buffer, self.internal.clone())
     }
 
-    pub fn create_texture_buffer_2d(&self) -> textures::TextureBuffer2D {
+    pub fn create_texture_buffer_2d<'a>(&self) -> textures::UnallocatedTextureBuffer2D<'a> {
         let mut texture_buffer = std::ptr::null_mut();
         unsafe {
             sys::Cobalt_Renderer_CreateTextureBuffer2D(self.internal.handle, &mut texture_buffer);
         }
-        textures::TextureBuffer2D::new(texture_buffer, self.internal.clone())
+        textures::UnallocatedTextureBuffer2D::new(texture_buffer, self.internal.clone())
     }
 
-    pub fn create_texture_buffer_3d(&self) -> textures::TextureBuffer3D {
+    pub fn create_texture_buffer_3d<'a>(&self) -> textures::UnallocatedTextureBuffer3D<'a> {
         let mut texture_buffer = std::ptr::null_mut();
         unsafe {
             sys::Cobalt_Renderer_CreateTextureBuffer3D(self.internal.handle, &mut texture_buffer);
         }
-        textures::TextureBuffer3D::new(texture_buffer, self.internal.clone())
+        textures::UnallocatedTextureBuffer3D::new(texture_buffer, self.internal.clone())
     }
 
-    pub fn create_texture_buffer_cube(&self) -> textures::TextureBufferCube {
+    pub fn create_texture_buffer_cube<'a>(&self) -> textures::UnallocatedTextureBufferCube<'a> {
         let mut texture_buffer = std::ptr::null_mut();
         unsafe {
             sys::Cobalt_Renderer_CreateTextureBufferCube(self.internal.handle, &mut texture_buffer);
         }
-        textures::TextureBufferCube::new(texture_buffer, self.internal.clone())
+        textures::UnallocatedTextureBufferCube::new(texture_buffer, self.internal.clone())
     }
 
-    pub fn create_texture_buffer_1d_array(&self) -> textures::TextureBuffer1DArray {
+    pub fn create_texture_buffer_1d_array<'a>(
+        &self,
+    ) -> textures::UnallocatedTextureBuffer1DArray<'a> {
         let mut texture_buffer = std::ptr::null_mut();
         unsafe {
             sys::Cobalt_Renderer_CreateTextureBuffer1DArray(
@@ -220,10 +222,12 @@ impl Renderer {
                 &mut texture_buffer,
             );
         }
-        textures::TextureBuffer1DArray::new(texture_buffer, self.internal.clone())
+        textures::UnallocatedTextureBuffer1DArray::new(texture_buffer, self.internal.clone())
     }
 
-    pub fn create_texture_buffer_2d_array(&self) -> textures::TextureBuffer2DArray {
+    pub fn create_texture_buffer_2d_array<'a>(
+        &self,
+    ) -> textures::UnallocatedTextureBuffer2DArray<'a> {
         let mut texture_buffer = std::ptr::null_mut();
         unsafe {
             sys::Cobalt_Renderer_CreateTextureBuffer2DArray(
@@ -231,10 +235,12 @@ impl Renderer {
                 &mut texture_buffer,
             );
         }
-        textures::TextureBuffer2DArray::new(texture_buffer, self.internal.clone())
+        textures::UnallocatedTextureBuffer2DArray::new(texture_buffer, self.internal.clone())
     }
 
-    pub fn create_texture_buffer_cube_array(&self) -> textures::TextureBufferCubeArray {
+    pub fn create_texture_buffer_cube_array<'a>(
+        &self,
+    ) -> textures::UnallocatedTextureBufferCubeArray<'a> {
         let mut texture_buffer = std::ptr::null_mut();
         unsafe {
             sys::Cobalt_Renderer_CreateTextureBufferCubeArray(
@@ -242,7 +248,7 @@ impl Renderer {
                 &mut texture_buffer,
             );
         }
-        textures::TextureBufferCubeArray::new(texture_buffer, self.internal.clone())
+        textures::UnallocatedTextureBufferCubeArray::new(texture_buffer, self.internal.clone())
     }
 
     pub fn create_texture_sampler_1d(&self) -> textures::TextureSampler1D {

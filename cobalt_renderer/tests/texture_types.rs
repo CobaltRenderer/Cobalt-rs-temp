@@ -4,7 +4,7 @@
 use cobalt_renderer::renderer::Feature;
 use cobalt_renderer::resources::*;
 
-use cobalt_renderer::resources::textures::{TextureBuffer, TextureUsageFlags};
+use cobalt_renderer::resources::textures::TextureUsageFlags;
 
 mod common;
 
@@ -14,45 +14,45 @@ fn texture_types() {
 
     let renderer = common::setup_renderer(&[Feature::TextureCubeArray]);
 
-    let mut texture = renderer.create_texture_buffer_2d();
-    texture.set_usage_flags(TextureUsageFlags::FrameBufferOutput);
-    texture.set_texture_dimensions(&[1024, 1024], None);
-    texture.set_texture_format(textures::ImageFormat::RGBA, textures::DataFormat::UNorm8);
-    texture.allocate_memory().unwrap();
-
     let mut texture = renderer.create_texture_buffer_1d();
     texture.set_usage_flags(TextureUsageFlags::FrameBufferOutput);
     texture.set_texture_dimensions(1024, None);
     texture.set_texture_format(textures::ImageFormat::RGBA, textures::DataFormat::UNorm8);
-    texture.allocate_memory().unwrap();
+    let _texture = texture.allocate_memory().unwrap();
+
+    let mut texture = renderer.create_texture_buffer_2d();
+    texture.set_usage_flags(TextureUsageFlags::FrameBufferOutput);
+    texture.set_texture_dimensions(&[1024, 1024], None);
+    texture.set_texture_format(textures::ImageFormat::RGBA, textures::DataFormat::UNorm8);
+    let _texture = texture.allocate_memory().unwrap();
 
     let mut texture = renderer.create_texture_buffer_3d();
     texture.set_usage_flags(TextureUsageFlags::FrameBufferOutput);
     texture.set_texture_dimensions(&[64, 64, 64], None);
     texture.set_texture_format(textures::ImageFormat::RGBA, textures::DataFormat::UNorm8);
-    texture.allocate_memory().unwrap();
+    let _texture = texture.allocate_memory().unwrap();
 
     let mut texture = renderer.create_texture_buffer_cube();
     texture.set_usage_flags(TextureUsageFlags::FrameBufferOutput);
     texture.set_texture_dimensions(1024, None);
     texture.set_texture_format(textures::ImageFormat::RGBA, textures::DataFormat::UNorm8);
-    texture.allocate_memory().unwrap();
+    let _texture = texture.allocate_memory().unwrap();
 
     let mut texture = renderer.create_texture_buffer_1d_array();
     texture.set_usage_flags(TextureUsageFlags::FrameBufferOutput);
     texture.set_texture_dimensions(1024, 10, None);
     texture.set_texture_format(textures::ImageFormat::RGBA, textures::DataFormat::UNorm8);
-    texture.allocate_memory().unwrap();
+    let _texture = texture.allocate_memory().unwrap();
 
     let mut texture = renderer.create_texture_buffer_2d_array();
     texture.set_usage_flags(TextureUsageFlags::FrameBufferOutput);
     texture.set_texture_dimensions(&[1024, 1024], 5, None);
     texture.set_texture_format(textures::ImageFormat::RGBA, textures::DataFormat::UNorm8);
-    texture.allocate_memory().unwrap();
+    let _texture = texture.allocate_memory().unwrap();
 
     let mut texture = renderer.create_texture_buffer_cube_array();
     texture.set_usage_flags(TextureUsageFlags::FrameBufferOutput);
     texture.set_texture_dimensions(1024, 3, None);
     texture.set_texture_format(textures::ImageFormat::RGBA, textures::DataFormat::UNorm8);
-    texture.allocate_memory().unwrap();
+    let _texture = texture.allocate_memory().unwrap();
 }
