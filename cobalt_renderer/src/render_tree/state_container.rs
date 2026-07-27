@@ -211,6 +211,7 @@ pub trait StateContainer: Sized {
             )
         }
     }
+
     fn bind_texture_with_combined_sampler_3d(
         &mut self,
         texture_id: TextureId,
@@ -226,6 +227,7 @@ pub trait StateContainer: Sized {
             )
         }
     }
+
     fn bind_texture_with_combined_sampler_cube(
         &mut self,
         texture_id: TextureId,
@@ -241,6 +243,7 @@ pub trait StateContainer: Sized {
             )
         }
     }
+
     fn bind_texture_with_combined_sampler_1d_array(
         &mut self,
         texture_id: TextureId,
@@ -256,6 +259,7 @@ pub trait StateContainer: Sized {
             )
         }
     }
+
     fn bind_texture_with_combined_sampler_2d_array(
         &mut self,
         texture_id: TextureId,
@@ -271,6 +275,7 @@ pub trait StateContainer: Sized {
             )
         }
     }
+
     fn bind_texture_with_combined_sampler_cube_array(
         &mut self,
         texture_id: TextureId,
@@ -286,6 +291,7 @@ pub trait StateContainer: Sized {
             )
         }
     }
+
     fn bind_texture(&mut self, texture_id: TextureId, texture: &mut impl TextureBuffer) {
         texture.bind_to_state_container(texture_id, self)
     }

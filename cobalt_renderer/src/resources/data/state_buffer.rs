@@ -241,6 +241,73 @@ declare_set_state_value_matrix!(
     sys::Cobalt_StateBuffer_SetStateValueForPageM4Float32
 );
 
+pub struct UnallocatedStateBuffer {
+    state_buffer: StateBuffer,
+}
+
+impl UnallocatedStateBuffer {
+    pub(crate) fn new(
+        handle: sys::Cobalt_StateBuffer,
+        renderer_internal: Arc<RendererInternal>,
+    ) -> Self {
+        UnallocatedStateBuffer {
+            state_buffer: StateBuffer::new(handle, renderer_internal),
+        }
+    }
+
+    pub fn set_performance_hints(
+        &mut self,
+        performance_hint_cpu: StateBufferPerformanceHint,
+        performance_hint_gpu: StateBufferPerformanceHint,
+    ) {
+        unsafe {
+            sys::Cobalt_StateBuffer_SetPerformanceHints(
+                self.state_buffer.handle,
+                performance_hint_cpu.bits() as sys::Cobalt_StateBufferPerformanceHint,
+                performance_hint_gpu.bits() as sys::Cobalt_StateBufferPerformanceHint,
+            )
+        }
+    }
+
+    pub fn set_manual_page_size(&mut self, page_size_in_bytes: usize) {
+        unsafe {
+            sys::Cobalt_StateBuffer_SetManualPageSize(self.state_buffer.handle, page_size_in_bytes)
+        }
+    }
+
+    pub fn set_page_settings(&mut self, initial_page_count: u32, allow_dynamic_resize: bool) {
+        unsafe {
+            sys::Cobalt_StateBuffer_SetPageSettings(
+                self.state_buffer.handle,
+                initial_page_count,
+                if allow_dynamic_resize { 1 } else { 0 },
+            )
+        }
+    }
+
+    pub fn bind_buffer_layout(
+        &mut self,
+        state_buffer_layout: &mut StateBufferLayout,
+    ) -> RendererResult<()> {
+        unsafe {
+            return_on_failure!(sys::Cobalt_StateBuffer_BindBufferLayout(
+                self.state_buffer.handle,
+                state_buffer_layout.handle,
+            ))
+        }
+        Ok(())
+    }
+
+    pub fn allocate_memory(self) -> RendererResult<StateBuffer> {
+        unsafe {
+            return_on_failure!(sys::Cobalt_StateBuffer_AllocateMemory(
+                self.state_buffer.handle
+            ))
+        }
+        Ok(self.state_buffer)
+    }
+}
+
 pub struct StateBuffer {
     pub(crate) handle: sys::Cobalt_StateBuffer,
     _renderer: Arc<RendererInternal>,
@@ -254,52 +321,6 @@ impl StateBuffer {
         StateBuffer {
             handle,
             _renderer: renderer_internal,
-        }
-    }
-
-    pub fn allocate_memory(&mut self) -> RendererResult<()> {
-        unsafe { return_on_failure!(sys::Cobalt_StateBuffer_AllocateMemory(self.handle)) }
-        Ok(())
-    }
-
-    pub fn set_performance_hints(
-        &mut self,
-        performance_hint_cpu: StateBufferPerformanceHint,
-        performance_hint_gpu: StateBufferPerformanceHint,
-    ) {
-        unsafe {
-            sys::Cobalt_StateBuffer_SetPerformanceHints(
-                self.handle,
-                performance_hint_cpu.bits() as sys::Cobalt_StateBufferPerformanceHint,
-                performance_hint_gpu.bits() as sys::Cobalt_StateBufferPerformanceHint,
-            )
-        }
-    }
-
-    pub fn set_manual_page_size(&mut self, page_size_in_bytes: usize) {
-        unsafe { sys::Cobalt_StateBuffer_SetManualPageSize(self.handle, page_size_in_bytes) }
-    }
-
-    pub fn bind_buffer_layout(
-        &mut self,
-        state_buffer_layout: &mut StateBufferLayout,
-    ) -> RendererResult<()> {
-        unsafe {
-            return_on_failure!(sys::Cobalt_StateBuffer_BindBufferLayout(
-                self.handle,
-                state_buffer_layout.handle,
-            ))
-        }
-        Ok(())
-    }
-
-    pub fn set_page_settings(&mut self, initial_page_count: u32, allow_dynamic_resize: bool) {
-        unsafe {
-            sys::Cobalt_StateBuffer_SetPageSettings(
-                self.handle,
-                initial_page_count,
-                if allow_dynamic_resize { 1 } else { 0 },
-            )
         }
     }
 

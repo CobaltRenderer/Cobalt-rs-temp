@@ -187,7 +187,7 @@ impl winit::application::ApplicationHandler for App {
                 },
             )
             .expect("Failed to load fragment shader");
-        shader_program
+        let mut shader_program = shader_program
             .compile_program()
             .expect("Failed to compile shader program");
 

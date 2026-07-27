@@ -101,33 +101,31 @@ pub enum ShaderTargetInfo {
     Metal,
 }
 
-pub struct ShaderProgram {
-    pub(crate) handle: sys::Cobalt_ShaderProgram,
-    _renderer: Arc<RendererInternal>,
+pub struct UncompiledShaderProgram {
+    program: ShaderProgram,
 }
 
-impl ShaderProgram {
+impl UncompiledShaderProgram {
     pub(crate) fn new(
         handle: sys::Cobalt_ShaderProgram,
         renderer_internal: Arc<RendererInternal>,
     ) -> Self {
-        ShaderProgram {
-            handle,
-            _renderer: renderer_internal,
+        UncompiledShaderProgram {
+            program: ShaderProgram::new(handle, renderer_internal),
         }
     }
 
     pub fn is_code_format_supported(&self, format: CodeFormat) -> bool {
         unsafe {
             sys::Cobalt_ShaderProgram_IsCodeFormatSupported(
-                self.handle,
+                self.program.handle,
                 format as sys::Cobalt_CodeFormat,
             ) != 0
         }
     }
 
     pub fn preferred_code_format(&self) -> CodeFormat {
-        let value = unsafe { sys::Cobalt_ShaderProgram_PreferredCodeFormat(self.handle) };
+        let value = unsafe { sys::Cobalt_ShaderProgram_PreferredCodeFormat(self.program.handle) };
         CodeFormat::try_from_primitive(value as i32).unwrap()
     }
 
@@ -148,7 +146,7 @@ impl ShaderProgram {
                 };
                 unsafe {
                     return_on_failure!(sys::Cobalt_ShaderProgram_ConfigureShaderTarget(
-                        self.handle,
+                        self.program.handle,
                         &raw const target as *const sys::Cobalt_ShaderTargetInfoBase
                     ))
                 }
@@ -162,7 +160,7 @@ impl ShaderProgram {
                 };
                 unsafe {
                     return_on_failure!(sys::Cobalt_ShaderProgram_ConfigureShaderTarget(
-                        self.handle,
+                        self.program.handle,
                         &raw const target as *const sys::Cobalt_ShaderTargetInfoBase
                     ))
                 }
@@ -173,7 +171,7 @@ impl ShaderProgram {
                 };
                 unsafe {
                     return_on_failure!(sys::Cobalt_ShaderProgram_ConfigureShaderTarget(
-                        self.handle,
+                        self.program.handle,
                         &raw const target
                     ))
                 }
@@ -184,7 +182,7 @@ impl ShaderProgram {
                 };
                 unsafe {
                     return_on_failure!(sys::Cobalt_ShaderProgram_ConfigureShaderTarget(
-                        self.handle,
+                        self.program.handle,
                         &raw const target
                     ))
                 }
@@ -218,7 +216,7 @@ impl ShaderProgram {
                 };
                 unsafe {
                     return_on_failure!(sys::Cobalt_ShaderProgram_LoadShaderStage(
-                        self.handle,
+                        self.program.handle,
                         stage as sys::Cobalt_ShaderStage,
                         (&raw const info) as *const sys::Cobalt_ShaderSourceInfoBase,
                     ))
@@ -243,7 +241,7 @@ impl ShaderProgram {
                 };
                 unsafe {
                     return_on_failure!(sys::Cobalt_ShaderProgram_LoadShaderStage(
-                        self.handle,
+                        self.program.handle,
                         stage as sys::Cobalt_ShaderStage,
                         (&raw const info) as *const sys::Cobalt_ShaderSourceInfoBase,
                     ))
@@ -259,7 +257,7 @@ impl ShaderProgram {
                 };
                 unsafe {
                     return_on_failure!(sys::Cobalt_ShaderProgram_LoadShaderStage(
-                        self.handle,
+                        self.program.handle,
                         stage as sys::Cobalt_ShaderStage,
                         (&raw const info) as *const sys::Cobalt_ShaderSourceInfoBase,
                     ))
@@ -275,7 +273,7 @@ impl ShaderProgram {
                 };
                 unsafe {
                     return_on_failure!(sys::Cobalt_ShaderProgram_LoadShaderStage(
-                        self.handle,
+                        self.program.handle,
                         stage as sys::Cobalt_ShaderStage,
                         (&raw const info) as *const sys::Cobalt_ShaderSourceInfoBase,
                     ))
@@ -291,7 +289,7 @@ impl ShaderProgram {
                 };
                 unsafe {
                     return_on_failure!(sys::Cobalt_ShaderProgram_LoadShaderStage(
-                        self.handle,
+                        self.program.handle,
                         stage as sys::Cobalt_ShaderStage,
                         (&raw const info) as *const sys::Cobalt_ShaderSourceInfoBase,
                     ))
@@ -316,7 +314,7 @@ impl ShaderProgram {
                 };
                 unsafe {
                     return_on_failure!(sys::Cobalt_ShaderProgram_LoadShaderStage(
-                        self.handle,
+                        self.program.handle,
                         stage as sys::Cobalt_ShaderStage,
                         (&raw const info) as *const sys::Cobalt_ShaderSourceInfoBase,
                     ))
@@ -341,7 +339,7 @@ impl ShaderProgram {
                 };
                 unsafe {
                     return_on_failure!(sys::Cobalt_ShaderProgram_LoadShaderStage(
-                        self.handle,
+                        self.program.handle,
                         stage as sys::Cobalt_ShaderStage,
                         (&raw const info) as *const sys::Cobalt_ShaderSourceInfoBase,
                     ))
@@ -366,7 +364,7 @@ impl ShaderProgram {
                 };
                 unsafe {
                     return_on_failure!(sys::Cobalt_ShaderProgram_LoadShaderStage(
-                        self.handle,
+                        self.program.handle,
                         stage as sys::Cobalt_ShaderStage,
                         (&raw const info) as *const sys::Cobalt_ShaderSourceInfoBase,
                     ))
@@ -377,9 +375,30 @@ impl ShaderProgram {
         Ok(())
     }
 
-    pub fn compile_program(&mut self) -> RendererResult<()> {
-        unsafe { return_on_failure!(sys::Cobalt_ShaderProgram_CompileProgram(self.handle)) }
-        Ok(())
+    pub fn compile_program(self) -> RendererResult<ShaderProgram> {
+        unsafe {
+            return_on_failure!(sys::Cobalt_ShaderProgram_CompileProgram(
+                self.program.handle
+            ))
+        }
+        Ok(self.program)
+    }
+}
+
+pub struct ShaderProgram {
+    pub(crate) handle: sys::Cobalt_ShaderProgram,
+    renderer: Arc<RendererInternal>,
+}
+
+impl ShaderProgram {
+    pub(crate) fn new(
+        handle: sys::Cobalt_ShaderProgram,
+        renderer_internal: Arc<RendererInternal>,
+    ) -> Self {
+        ShaderProgram {
+            handle,
+            renderer: renderer_internal,
+        }
     }
 
     pub fn vertex_attribute_exists(&self, name: impl AsRef<str>) -> bool {
@@ -535,16 +554,23 @@ impl ShaderProgram {
     pub fn load_state_buffer_layout_from_shader(
         &self,
         state_buffer_id: StateBufferId,
-        state_buffer_layout: &mut StateBufferLayout,
-    ) -> RendererResult<()> {
+    ) -> RendererResult<StateBufferLayout> {
+        let mut state_buffer_layout = std::ptr::null_mut();
+        unsafe {
+            sys::Cobalt_Renderer_CreateStateBufferLayout(
+                self.renderer.handle,
+                &mut state_buffer_layout,
+            );
+        }
+        let layout = StateBufferLayout::new(state_buffer_layout, self.renderer.clone());
         unsafe {
             return_on_failure!(sys::Cobalt_ShaderProgram_LoadStateBufferLayoutFromShader(
                 self.handle,
                 state_buffer_id.0,
-                state_buffer_layout.handle,
+                layout.handle,
             ))
         }
-        Ok(())
+        Ok(layout)
     }
 }
 

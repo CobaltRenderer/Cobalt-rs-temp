@@ -81,7 +81,7 @@ fn general() {
             },
         )
         .unwrap();
-    shader_program.compile_program().unwrap();
+    let mut shader_program = shader_program.compile_program().unwrap();
 
     let mut program_node = renderer.create_program_node();
     program_node

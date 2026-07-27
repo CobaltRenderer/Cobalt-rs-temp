@@ -8,7 +8,6 @@ use crate::resources::frame_buffers::AttachmentType;
 
 use cobalt_renderer_sys as sys;
 
-/// How polygons should be filled when rendered
 #[repr(i32)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum PolygonFillMode {
@@ -16,7 +15,6 @@ pub enum PolygonFillMode {
     Wireframe = sys::Cobalt_PolygonFillMode_Wireframe as i32,
 }
 
-/// How polygons should be culled when rendered
 #[repr(i32)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum PolygonCullMode {
@@ -25,7 +23,6 @@ pub enum PolygonCullMode {
     Back = sys::Cobalt_PolygonCullMode_Back as i32,
 }
 
-/// Defines the winding order which determines if a polygon face forward or backwards
 #[repr(i32)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum PolygonWindingOrder {
@@ -33,7 +30,6 @@ pub enum PolygonWindingOrder {
     CounterClockwise = sys::Cobalt_PolygonWindingOrder_CounterClockwise as i32,
 }
 
-/// Comparison functions between two depth value
 #[repr(i32)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum DepthComparisonFunction {
@@ -47,7 +43,6 @@ pub enum DepthComparisonFunction {
     Always = sys::Cobalt_DepthComparisonFunction_Always as i32,
 }
 
-/// Target face directions for stencil buffer
 #[repr(i32)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum StencilTargetFace {
@@ -56,7 +51,6 @@ pub enum StencilTargetFace {
     FrontAndBackFace = sys::Cobalt_StencilTargetFace_FrontAndBackFace as i32,
 }
 
-/// Comparison function between two stencil values
 #[repr(i32)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum StencilComparisonFunction {
@@ -70,7 +64,6 @@ pub enum StencilComparisonFunction {
     Always = sys::Cobalt_StencilComparisonFunction_Always as i32,
 }
 
-/// Operation to combine an existing stencil value with a new one
 #[repr(i32)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum StencilOperation {
@@ -84,7 +77,6 @@ pub enum StencilOperation {
     Invert = sys::Cobalt_StencilOperation_Invert as i32,
 }
 
-/// Operation to combine an existing destination color value with a new source color
 #[repr(i32)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum BlendOperation {
@@ -95,7 +87,6 @@ pub enum BlendOperation {
     Max = sys::Cobalt_BlendOperation_Max as i32,
 }
 
-/// Factors to use when combining an existing destination color value with a new source color
 #[repr(i32)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum BlendFactor {
@@ -111,7 +102,6 @@ pub enum BlendFactor {
     OneMinusDestinationAlpha = sys::Cobalt_BlendFactor_OneMinusDestinationAlpha as i32,
 }
 
-/// Describes how to blend a new color with an existing color in the frame buffer
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct BlendDescriptor {
     pub operation_rgb: BlendOperation,
@@ -122,7 +112,6 @@ pub struct BlendDescriptor {
     pub factor_destination_a: BlendFactor,
 }
 
-/// Defines graphics state and how content is drawn
 pub struct StateGroupNode {
     pub(crate) handle: sys::Cobalt_StateGroupNode,
     _renderer: Arc<RendererInternal>,

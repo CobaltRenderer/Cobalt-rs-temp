@@ -356,15 +356,15 @@ impl Renderer {
         frame_buffers::FrameBufferOutput::new(frame_buffer_output, self.internal.clone())
     }
 
-    pub fn create_state_buffer(&self) -> data::StateBuffer {
+    pub fn create_state_buffer(&self) -> data::UnallocatedStateBuffer {
         let mut state_buffer = std::ptr::null_mut();
         unsafe {
             sys::Cobalt_Renderer_CreateStateBuffer(self.internal.handle, &mut state_buffer);
         }
-        data::StateBuffer::new(state_buffer, self.internal.clone())
+        data::UnallocatedStateBuffer::new(state_buffer, self.internal.clone())
     }
 
-    pub fn create_state_buffer_layout(&self) -> data::StateBufferLayout {
+    pub fn create_state_buffer_layout(&self) -> data::StateBufferLayoutBuilder {
         let mut state_buffer_layout = std::ptr::null_mut();
         unsafe {
             sys::Cobalt_Renderer_CreateStateBufferLayout(
@@ -372,7 +372,7 @@ impl Renderer {
                 &mut state_buffer_layout,
             );
         }
-        data::StateBufferLayout::new(state_buffer_layout, self.internal.clone())
+        data::StateBufferLayoutBuilder::new(state_buffer_layout, self.internal.clone())
     }
 
     pub fn create_render_pass_node(&self) -> RenderPassNode {
@@ -415,12 +415,12 @@ impl Renderer {
         DefaultState::new(default_state, self.internal.clone())
     }
 
-    pub fn create_shader_program(&self) -> programs::ShaderProgram {
+    pub fn create_shader_program(&self) -> programs::UncompiledShaderProgram {
         let mut shader_program = std::ptr::null_mut();
         unsafe {
             sys::Cobalt_Renderer_CreateShaderProgram(self.internal.handle, &mut shader_program);
         }
-        programs::ShaderProgram::new(shader_program, self.internal.clone())
+        programs::UncompiledShaderProgram::new(shader_program, self.internal.clone())
     }
 
     pub fn set_render_passes(&self, child_nodes: &[&RenderPassNode], sort_order: &[i32]) {

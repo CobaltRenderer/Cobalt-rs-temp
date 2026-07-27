@@ -18,31 +18,29 @@ pub enum StateBufferDataType {
     Float64 = sys::Cobalt_StateBufferDataType_Float64 as i32,
 }
 
-pub struct StateBufferLayout {
-    pub(crate) handle: sys::Cobalt_StateBufferLayout,
-    _renderer: Arc<RendererInternal>,
+pub struct StateBufferLayoutBuilder {
+    state_buffer: StateBufferLayout,
 }
 
-impl StateBufferLayout {
+impl StateBufferLayoutBuilder {
     pub(crate) fn new(
         handle: sys::Cobalt_StateBufferLayout,
         renderer_internal: Arc<RendererInternal>,
     ) -> Self {
-        StateBufferLayout {
-            handle,
-            _renderer: renderer_internal,
-        }
-    }
-
-    // TODO(DTM):This is a prime candidate for a builder pattern
-
-    pub fn begin_layout_definition(&mut self) -> RendererResult<()> {
+        let builder = StateBufferLayoutBuilder {
+            state_buffer: StateBufferLayout::new(handle, renderer_internal),
+        };
         unsafe {
-            return_on_failure!(sys::Cobalt_StateBufferLayout_BeginLayoutDefinition(
-                self.handle,
-            ))
+            if sys::Cobalt_StateBufferLayout_BeginLayoutDefinition(builder.state_buffer.handle)
+                != sys::COBALT_SUCCESS
+            {
+                // BeginLayoutDefinition should only fail because a layout was already started
+                // or completed. As it should be new here, this should not fail and a failure
+                // would indicate a deeper unexpected issue
+                panic!("StateBufferLayout BeginLayoutDefinition failed unexpectedly");
+            }
         }
-        Ok(())
+        builder
     }
 
     pub fn append_field(
@@ -54,7 +52,7 @@ impl StateBufferLayout {
         let name = name.as_ref();
         unsafe {
             sys::Cobalt_StateBufferLayout_AppendField(
-                self.handle,
+                self.state_buffer.handle,
                 name.as_ptr() as *const std::ffi::c_char,
                 name.len(),
                 data_type as sys::Cobalt_StateBufferDataType,
@@ -73,7 +71,7 @@ impl StateBufferLayout {
         let name = name.as_ref();
         unsafe {
             sys::Cobalt_StateBufferLayout_AppendVector(
-                self.handle,
+                self.state_buffer.handle,
                 name.as_ptr() as *const std::ffi::c_char,
                 name.len(),
                 data_type as sys::Cobalt_StateBufferDataType,
@@ -94,7 +92,7 @@ impl StateBufferLayout {
         let name = name.as_ref();
         unsafe {
             sys::Cobalt_StateBufferLayout_AppendMatrix(
-                self.handle,
+                self.state_buffer.handle,
                 name.as_ptr() as *const std::ffi::c_char,
                 name.len(),
                 data_type as sys::Cobalt_StateBufferDataType,
@@ -105,13 +103,30 @@ impl StateBufferLayout {
         }
     }
 
-    pub fn construct_layout_definition(&mut self) -> RendererResult<()> {
+    pub fn construct(self) -> RendererResult<StateBufferLayout> {
         unsafe {
             return_on_failure!(sys::Cobalt_StateBufferLayout_ConstructStateLayout(
-                self.handle,
+                self.state_buffer.handle,
             ))
         }
-        Ok(())
+        Ok(self.state_buffer)
+    }
+}
+
+pub struct StateBufferLayout {
+    pub(crate) handle: sys::Cobalt_StateBufferLayout,
+    _renderer: Arc<RendererInternal>,
+}
+
+impl StateBufferLayout {
+    pub(crate) fn new(
+        handle: sys::Cobalt_StateBufferLayout,
+        renderer_internal: Arc<RendererInternal>,
+    ) -> Self {
+        StateBufferLayout {
+            handle,
+            _renderer: renderer_internal,
+        }
     }
 }
 
