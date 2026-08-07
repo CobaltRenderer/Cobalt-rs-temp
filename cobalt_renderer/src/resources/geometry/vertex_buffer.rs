@@ -47,7 +47,7 @@ impl<'a> UnallocatedVertexBuffer<'a> {
             return_on_failure!(sys::Cobalt_VertexAttribute_SetInitialData(
                 attribute.handle,
                 data.as_ptr() as *const u8,
-                data.len(),
+                core::mem::size_of_val(data) / attribute.element_size,
                 entry_stride_in_bytes.unwrap_or(attribute.element_size),
             ))
         }
@@ -88,7 +88,7 @@ impl<'a> UnallocatedVertexBuffer<'a> {
             return_on_failure!(sys::Cobalt_VertexAttribute_SetInitialData(
                 attribute.handle,
                 data.as_ptr() as *const u8,
-                data.len(),
+                core::mem::size_of_val(data) / attribute.element_size,
                 entry_stride_in_bytes.unwrap_or(attribute.element_size),
             ))
         }

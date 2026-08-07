@@ -117,19 +117,18 @@ impl winit::application::ApplicationHandler for App {
         // but we'll just pick the preferred device (typically discrete and with most memory)
         let mut device = enumerator.preferred_device().expect("No preferred device");
 
+        // Create a window system. This is unsafe if we pass an invalid pointer
+        // to `new_from_raw_display_handle`
+        let window_system = unsafe {
+            WindowSystem::new_from_raw_display_handle(window.display_handle().unwrap().as_raw())
+                .unwrap()
+        };
+
         // We create the core renderer object!
         // We can enable features and select options here, and we need to tell
         // it what window system we are using
         let renderer = device
-            .create_renderer(
-                &[],
-                &[],
-                RendererInitializationFlags::None,
-                WindowSystem::new_from_raw_display_handle(
-                    window.display_handle().unwrap().as_raw(),
-                )
-                .unwrap(),
-            )
+            .create_renderer(&[], &[], RendererInitializationFlags::None, window_system)
             .expect("Could not create renderer");
 
         // With the renderer, we can start building out what we want to draw

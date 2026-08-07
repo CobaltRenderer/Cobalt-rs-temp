@@ -128,9 +128,9 @@ pub struct DataBufferLimits {
     pub state_buffer_alignment_struct: u32,
 }
 
-/// Window system that will be used for the renderer
+// Internal enum of window systems, holds onto unsafe pointers
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum WindowSystem {
+enum WindowSystemInternal {
     Headless,
     #[cfg(target_os = "windows")]
     Windows,
@@ -150,18 +150,29 @@ pub enum WindowSystem {
     },
 }
 
+/// Window system that will be used for the renderer
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct WindowSystem {
+    internal: WindowSystemInternal,
+}
+
 impl WindowSystem {
+    /// # Safety
+    ///
+    /// Display handles must be valid when `WindowSystem` is used to create a renderer
     #[cfg(feature = "raw_window_handle")]
-    pub fn new_from_raw_display_handle(
+    pub unsafe fn new_from_raw_display_handle(
         handle: raw_window_handle::RawDisplayHandle,
     ) -> RendererResult<Self> {
-        match handle {
+        let internal = match handle {
             #[cfg(target_os = "windows")]
-            RawDisplayHandle::Windows(_) => Ok(Self::Windows),
+            RawDisplayHandle::Windows(_) => Ok(WindowSystemInternal::Windows),
             #[cfg(target_os = "macos")]
-            RawDisplayHandle::AppKit(_) => Ok(Self::AppKit),
+            RawDisplayHandle::AppKit(_) => Ok(WindowSystemInternal::AppKit),
             #[cfg(target_os = "linux")]
-            RawDisplayHandle::Wayland(w) => Ok(Self::Wayland { display: w.display }),
+            RawDisplayHandle::Wayland(w) => {
+                Ok(WindowSystemInternal::Wayland { display: w.display })
+            }
             #[cfg(target_os = "linux")]
             RawDisplayHandle::Xcb(w) => {
                 let connection = w.connection.ok_or_else(|| {
@@ -170,7 +181,7 @@ impl WindowSystem {
                         "Xcb display does not contain a required connection pointer".into(),
                     )
                 })?;
-                Ok(Self::Xcb { connection })
+                Ok(WindowSystemInternal::Xcb { connection })
             }
             #[cfg(target_os = "linux")]
             RawDisplayHandle::Xlib(w) => {
@@ -180,12 +191,66 @@ impl WindowSystem {
                         "Xlib display does not contain a required display pointer".into(),
                     )
                 })?;
-                Ok(Self::Xlib { display })
+                Ok(WindowSystemInternal::Xlib { display })
             }
             _ => Err(RendererError::new_with_error(
                 RendererErrorKind::UnsupportedWindow,
                 "RawDisplayHandle variant is not supported on this platform".into(),
             )),
+        }?;
+        Ok(WindowSystem { internal })
+    }
+
+    pub fn headless() -> Self {
+        WindowSystem {
+            internal: WindowSystemInternal::Headless,
+        }
+    }
+
+    #[cfg(target_os = "windows")]
+    pub fn windows() -> Self {
+        WindowSystem {
+            internal: WindowSystemInternal::Windows,
+        }
+    }
+
+    #[cfg(target_os = "macos")]
+    pub fn app_kit() -> Self {
+        WindowSystem {
+            internal: WindowSystemInternal::AppKit,
+        }
+    }
+
+    /// # Safety
+    ///
+    /// Display pointer must point to a valid Wayland `wl_display` which is valid when
+    /// `WindowSystem` is used to create a renderer
+    #[cfg(target_os = "linux")]
+    pub unsafe fn wayland(display: std::ptr::NonNull<std::ffi::c_void>) -> Self {
+        WindowSystem {
+            internal: WindowSystemInternal::Wayland { display },
+        }
+    }
+
+    /// # Safety
+    ///
+    /// Connection pointer must point to a valid Xcb `xcb_connection_t` which is valid when
+    /// `WindowSystem` is used to create a renderer
+    #[cfg(target_os = "linux")]
+    pub unsafe fn xcb(connection: std::ptr::NonNull<std::ffi::c_void>) -> Self {
+        WindowSystem {
+            internal: WindowSystemInternal::Xcb { connection },
+        }
+    }
+
+    /// # Safety
+    ///
+    /// Display pointer must point to a valid Xlib `Display` which is valid when
+    /// `WindowSystem` is used to create a renderer
+    #[cfg(target_os = "linux")]
+    pub unsafe fn xlib(display: std::ptr::NonNull<std::ffi::c_void>) -> Self {
+        WindowSystem {
+            internal: WindowSystemInternal::Xlib { display },
         }
     }
 }
@@ -461,8 +526,8 @@ impl<'a> GraphicsDevice<'a> {
                 enabled_options.len(),
                 &mut renderer,
             ));
-            let result = match window_system {
-                WindowSystem::Headless => {
+            let result = match window_system.internal {
+                WindowSystemInternal::Headless => {
                     let info = sys::Cobalt_WindowSystemInfoHeadless {
                         base: sys::Cobalt_WindowSystemInfoBase {
                             type_: sys::Cobalt_WindowSystemType_Headless,
@@ -475,7 +540,7 @@ impl<'a> GraphicsDevice<'a> {
                     )
                 }
                 #[cfg(target_os = "windows")]
-                WindowSystem::Windows => {
+                WindowSystemInternal::Windows => {
                     let info = sys::Cobalt_WindowSystemInfoWin32 {
                         base: sys::Cobalt_WindowSystemInfoBase {
                             type_: sys::Cobalt_WindowSystemType_Win32,
@@ -488,7 +553,7 @@ impl<'a> GraphicsDevice<'a> {
                     )
                 }
                 #[cfg(target_os = "macos")]
-                WindowSystem::AppKit => {
+                WindowSystemInternal::AppKit => {
                     let info = sys::Cobalt_WindowSystemInfoAppKit {
                         base: sys::Cobalt_WindowSystemInfoBase {
                             type_: sys::Cobalt_WindowSystemType_AppKit,
@@ -501,7 +566,7 @@ impl<'a> GraphicsDevice<'a> {
                     )
                 }
                 #[cfg(target_os = "linux")]
-                WindowSystem::Wayland { display } => {
+                WindowSystemInternal::Wayland { display } => {
                     let info = sys::Cobalt_WindowSystemInfoWayland {
                         base: sys::Cobalt_WindowSystemInfoBase {
                             type_: sys::Cobalt_WindowSystemType_Wayland,
@@ -515,7 +580,7 @@ impl<'a> GraphicsDevice<'a> {
                     )
                 }
                 #[cfg(target_os = "linux")]
-                WindowSystem::Xcb { connection } => {
+                WindowSystemInternal::Xcb { connection } => {
                     let info = sys::Cobalt_WindowSystemInfoXCB {
                         base: sys::Cobalt_WindowSystemInfoBase {
                             type_: sys::Cobalt_WindowSystemType_XCB,
@@ -529,7 +594,7 @@ impl<'a> GraphicsDevice<'a> {
                     )
                 }
                 #[cfg(target_os = "linux")]
-                WindowSystem::Xlib { display } => {
+                WindowSystemInternal::Xlib { display } => {
                     let info = sys::Cobalt_WindowSystemInfoXlib {
                         base: sys::Cobalt_WindowSystemInfoBase {
                             type_: sys::Cobalt_WindowSystemType_Xlib,

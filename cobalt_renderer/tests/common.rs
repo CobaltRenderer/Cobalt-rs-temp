@@ -49,7 +49,7 @@ pub fn setup_renderer(
             &[],
             &[],
             RendererInitializationFlags::None,
-            WindowSystem::Headless,
+            WindowSystem::headless(),
         )
         .expect("Couldn't create renderer")
 }

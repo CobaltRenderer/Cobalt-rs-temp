@@ -115,7 +115,7 @@ impl IndexAttribute {
             return_on_failure!(sys::Cobalt_IndexAttribute_QueueDataUpdate(
                 self.handle,
                 data.as_ptr() as *const u8,
-                data.len(),
+                core::mem::size_of_val(data) / self.element_size,
                 initial_vertex_no,
                 entry_stride_in_bytes.unwrap_or(self.element_size),
                 transfer_batch,

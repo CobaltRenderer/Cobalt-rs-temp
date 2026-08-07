@@ -136,6 +136,14 @@ impl RenderPassNode {
         child_nodes: &[&ProgramNode],
         default_states: Option<&[&DefaultState]>,
     ) {
+        if let Some(states) = default_states
+            && child_nodes.len() != states.len()
+        {
+            log::error!(
+                "Could not add child nodes, default_states.len() does not match child_nodes.len()"
+            );
+            return;
+        }
         unsafe {
             let nodes: Vec<sys::Cobalt_ProgramNode> =
                 child_nodes.iter().map(|n| n.handle).collect();
@@ -187,6 +195,14 @@ impl RenderPassNode {
         child_nodes: &[&ProgramNode],
         default_states: Option<&[&DefaultState]>,
     ) {
+        if let Some(states) = default_states
+            && child_nodes.len() != states.len()
+        {
+            log::error!(
+                "Could not set child nodes, default_states.len() does not match child_nodes.len()"
+            );
+            return;
+        }
         unsafe {
             let nodes: Vec<sys::Cobalt_ProgramNode> =
                 child_nodes.iter().map(|n| n.handle).collect();

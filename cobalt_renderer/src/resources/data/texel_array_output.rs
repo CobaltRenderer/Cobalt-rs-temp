@@ -75,7 +75,7 @@ impl TexelArrayOutput {
         unsafe {
             return_on_failure!(sys::Cobalt_TexelArrayOutput_ReadBufferData(
                 self.handle,
-                buffer.as_ptr() as *mut std::ffi::c_void,
+                buffer.as_mut_ptr() as *mut std::ffi::c_void,
                 core::mem::size_of_val(buffer),
                 image_format as sys::Cobalt_SourceImageFormat,
                 data_format as sys::Cobalt_SourceDataFormat,

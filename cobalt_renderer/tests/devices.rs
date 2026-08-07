@@ -54,7 +54,7 @@ fn list_devices() {
                     &[],
                     &[],
                     RendererInitializationFlags::None,
-                    WindowSystem::Headless,
+                    WindowSystem::headless(),
                 )
                 .expect("Failed to create renderer for preferred device");
         } else {

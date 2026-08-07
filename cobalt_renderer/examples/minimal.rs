@@ -50,13 +50,13 @@ fn main() {
 
     // We create the core renderer object!
     // We can enable features and select options here, and we need to tell
-    // it what window system we are using
+    // it we aren't using any window system
     let renderer = device
         .create_renderer(
             &[],
             &[],
             RendererInitializationFlags::None,
-            WindowSystem::Headless,
+            WindowSystem::headless(),
         )
         .expect("Could not create renderer");
 
